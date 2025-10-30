@@ -82,6 +82,7 @@ model Transaction {
   id            Int          @id @default(autoincrement())
   userId        Int
   subcategoryId Int
+  title         String
   amount        Decimal      @db.Decimal(10, 2)
   description   String?
   date          DateTime

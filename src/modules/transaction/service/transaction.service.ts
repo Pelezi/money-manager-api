@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CategoryType } from '@prisma/client';
+import { CategoryType, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../common';
 import { TransactionData, TransactionInput } from '../model';
@@ -29,7 +29,7 @@ export class TransactionService {
         type?: CategoryType
     ): Promise<TransactionData[]> {
 
-        const where: any = { userId };
+        const where: Prisma.TransactionWhereInput = { userId };
 
         if (subcategoryId) {
             where.subcategoryId = subcategoryId;
@@ -92,6 +92,7 @@ export class TransactionService {
             data: {
                 userId,
                 subcategoryId: data.subcategoryId,
+                title: data.title,
                 amount: data.amount,
                 description: data.description,
                 date: data.date,

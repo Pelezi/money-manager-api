@@ -13,10 +13,13 @@ export class TransactionData {
     @ApiProperty({ description: 'Subcategory ID', example: 1 })
     public readonly subcategoryId: number;
 
+    @ApiProperty({ description: 'Transaction title', example: 'Grocery shopping' })
+    public readonly title: string;
+
     @ApiProperty({ description: 'Transaction amount', example: 50.00 })
     public readonly amount: number;
 
-    @ApiProperty({ description: 'Transaction description', example: 'Grocery shopping', required: false })
+    @ApiProperty({ description: 'Transaction description', example: 'Weekly groceries at Whole Foods', required: false })
     public readonly description?: string;
 
     @ApiProperty({ description: 'Transaction date', example: '2024-01-15T00:00:00Z' })
@@ -32,6 +35,7 @@ export class TransactionData {
         this.id = entity.id;
         this.userId = entity.userId;
         this.subcategoryId = entity.subcategoryId;
+        this.title = entity.title;
         this.amount = (entity.amount as Decimal).toNumber();
         this.description = entity.description || undefined;
         this.date = entity.date;

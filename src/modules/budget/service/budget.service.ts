@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CategoryType } from '@prisma/client';
+import { CategoryType, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../common';
 import { BudgetData, BudgetInput } from '../model';
@@ -22,7 +22,7 @@ export class BudgetService {
      */
     public async findByUser(userId: number, year?: number, type?: CategoryType, month?: number): Promise<BudgetData[]> {
 
-        const where: any = { userId };
+        const where: Prisma.BudgetWhereInput = { userId };
 
         if (year) {
             where.year = year;
@@ -188,7 +188,7 @@ export class BudgetService {
         type?: CategoryType
     ): Promise<{ budgeted: number; actual: number; difference: number }> {
 
-        const budgetWhere: any = {
+        const budgetWhere: Prisma.BudgetWhereInput = {
             userId,
             year
         };
@@ -211,7 +211,7 @@ export class BudgetService {
 
         const budgeted = budgets.reduce((sum, budget) => sum + Number(budget.amount), 0);
 
-        const transactionWhere: any = {
+        const transactionWhere: Prisma.TransactionWhereInput = {
             userId,
             date: {
                 gte: new Date(year, month ? month - 1 : 0, 1),

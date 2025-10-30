@@ -5,6 +5,9 @@ export class TransactionInput {
     @ApiProperty({ description: 'Subcategory ID', example: 1 })
     public readonly subcategoryId: number;
 
+    @ApiProperty({ description: 'Transaction title', example: 'Grocery shopping' })
+    public readonly title: string;
+
     @ApiProperty({ description: 'Transaction amount', example: 50.00 })
     public readonly amount: number;
 

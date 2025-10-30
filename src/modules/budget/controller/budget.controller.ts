@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query, Use
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { CategoryType } from '@prisma/client';
 
-import { RestrictedGuard } from '../../common';
+import { AuthenticatedRequest, RestrictedGuard } from '../../common';
 
 import { BudgetData, BudgetInput } from '../model';
 import { BudgetService } from '../service';
@@ -27,9 +27,9 @@ export class BudgetController {
         @Query('year') year?: string,
         @Query('month') month?: string,
         @Query('type') type?: CategoryType,
-        @Request() req?: any
+        @Request() req?: AuthenticatedRequest
     ): Promise<BudgetData[]> {
-        const userId = req.user?.userId || 1;
+        const userId = req?.user?.userId || 1;
         return this.budgetService.findByUser(
             userId,
             year ? parseInt(year) : undefined,
@@ -50,9 +50,9 @@ export class BudgetController {
         @Query('month') month?: string,
         @Query('subcategoryId') subcategoryId?: string,
         @Query('type') type?: CategoryType,
-        @Request() req?: any
+        @Request() req?: AuthenticatedRequest
     ): Promise<{ budgeted: number; actual: number; difference: number }> {
-        const userId = req.user?.userId || 1;
+        const userId = req?.user?.userId || 1;
         return this.budgetService.getComparison(
             userId,
             parseInt(year),
@@ -66,8 +66,8 @@ export class BudgetController {
     @ApiParam({ name: 'id', description: 'Budget ID' })
     @ApiOperation({ summary: 'Find a budget by ID' })
     @ApiResponse({ status: HttpStatus.OK, type: BudgetData })
-    public async findById(@Param('id') id: string, @Request() req: any): Promise<BudgetData> {
-        const userId = req.user?.userId || 1;
+    public async findById(@Param('id') id: string, @Request() req: AuthenticatedRequest): Promise<BudgetData> {
+        const userId = req?.user?.userId || 1;
         const budget = await this.budgetService.findById(parseInt(id), userId);
         if (!budget) {
             throw new Error('Budget not found');
@@ -78,8 +78,8 @@ export class BudgetController {
     @Post()
     @ApiOperation({ summary: 'Create a new budget' })
     @ApiResponse({ status: HttpStatus.CREATED, type: BudgetData })
-    public async create(@Body() input: BudgetInput, @Request() req: any): Promise<BudgetData> {
-        const userId = req.user?.userId || 1;
+    public async create(@Body() input: BudgetInput, @Request() req: AuthenticatedRequest): Promise<BudgetData> {
+        const userId = req?.user?.userId || 1;
         return this.budgetService.create(userId, input);
     }
 
@@ -87,8 +87,8 @@ export class BudgetController {
     @ApiParam({ name: 'id', description: 'Budget ID' })
     @ApiOperation({ summary: 'Update a budget' })
     @ApiResponse({ status: HttpStatus.OK, type: BudgetData })
-    public async update(@Param('id') id: string, @Body() input: BudgetInput, @Request() req: any): Promise<BudgetData> {
-        const userId = req.user?.userId || 1;
+    public async update(@Param('id') id: string, @Body() input: BudgetInput, @Request() req: AuthenticatedRequest): Promise<BudgetData> {
+        const userId = req?.user?.userId || 1;
         return this.budgetService.update(parseInt(id), userId, input);
     }
 
@@ -96,8 +96,8 @@ export class BudgetController {
     @ApiParam({ name: 'id', description: 'Budget ID' })
     @ApiOperation({ summary: 'Delete a budget' })
     @ApiResponse({ status: HttpStatus.NO_CONTENT })
-    public async delete(@Param('id') id: string, @Request() req: any): Promise<void> {
-        const userId = req.user?.userId || 1;
+    public async delete(@Param('id') id: string, @Request() req: AuthenticatedRequest): Promise<void> {
+        const userId = req?.user?.userId || 1;
         await this.budgetService.delete(parseInt(id), userId);
     }
 

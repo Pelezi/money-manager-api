@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../common';
 import { SubcategoryData, SubcategoryInput } from '../model';
@@ -19,7 +20,7 @@ export class SubcategoryService {
      */
     public async findByUser(userId: number, categoryId?: number): Promise<SubcategoryData[]> {
 
-        const where: any = { userId };
+        const where: Prisma.SubcategoryWhereInput = { userId };
 
         if (categoryId) {
             where.categoryId = categoryId;

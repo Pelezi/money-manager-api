@@ -1,3 +1,4 @@
+import { AuthenticatedRequest } from "../../common";
 import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query, UseGuards, Request } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { CategoryType } from '@prisma/client';
@@ -29,9 +30,9 @@ export class TransactionController {
         @Query('startDate') startDate?: string,
         @Query('endDate') endDate?: string,
         @Query('type') type?: CategoryType,
-        @Request() req?: any
+        @Request() req?: AuthenticatedRequest
     ): Promise<TransactionData[]> {
-        const userId = req.user?.userId || 1;
+        const userId = req?.user?.userId || 1;
         return this.transactionService.findByUser(
             userId,
             subcategoryId ? parseInt(subcategoryId) : undefined,
@@ -49,9 +50,9 @@ export class TransactionController {
     public async getAggregated(
         @Query('startDate') startDate: string,
         @Query('endDate') endDate: string,
-        @Request() req: any
+        @Request() req: AuthenticatedRequest
     ): Promise<{ subcategoryId: number; total: number }[]> {
-        const userId = req.user?.userId || 1;
+        const userId = req?.user?.userId || 1;
         return this.transactionService.getAggregatedSpending(
             userId,
             new Date(startDate),
@@ -63,8 +64,8 @@ export class TransactionController {
     @ApiParam({ name: 'id', description: 'Transaction ID' })
     @ApiOperation({ summary: 'Find a transaction by ID' })
     @ApiResponse({ status: HttpStatus.OK, type: TransactionData })
-    public async findById(@Param('id') id: string, @Request() req: any): Promise<TransactionData> {
-        const userId = req.user?.userId || 1;
+    public async findById(@Param('id') id: string, @Request() req: AuthenticatedRequest): Promise<TransactionData> {
+        const userId = req?.user?.userId || 1;
         const transaction = await this.transactionService.findById(parseInt(id), userId);
         if (!transaction) {
             throw new Error('Transaction not found');
@@ -75,8 +76,8 @@ export class TransactionController {
     @Post()
     @ApiOperation({ summary: 'Create a new transaction' })
     @ApiResponse({ status: HttpStatus.CREATED, type: TransactionData })
-    public async create(@Body() input: TransactionInput, @Request() req: any): Promise<TransactionData> {
-        const userId = req.user?.userId || 1;
+    public async create(@Body() input: TransactionInput, @Request() req: AuthenticatedRequest): Promise<TransactionData> {
+        const userId = req?.user?.userId || 1;
         return this.transactionService.create(userId, input);
     }
 
@@ -84,8 +85,8 @@ export class TransactionController {
     @ApiParam({ name: 'id', description: 'Transaction ID' })
     @ApiOperation({ summary: 'Update a transaction' })
     @ApiResponse({ status: HttpStatus.OK, type: TransactionData })
-    public async update(@Param('id') id: string, @Body() input: TransactionInput, @Request() req: any): Promise<TransactionData> {
-        const userId = req.user?.userId || 1;
+    public async update(@Param('id') id: string, @Body() input: TransactionInput, @Request() req: AuthenticatedRequest): Promise<TransactionData> {
+        const userId = req?.user?.userId || 1;
         return this.transactionService.update(parseInt(id), userId, input);
     }
 
@@ -93,8 +94,8 @@ export class TransactionController {
     @ApiParam({ name: 'id', description: 'Transaction ID' })
     @ApiOperation({ summary: 'Delete a transaction' })
     @ApiResponse({ status: HttpStatus.NO_CONTENT })
-    public async delete(@Param('id') id: string, @Request() req: any): Promise<void> {
-        const userId = req.user?.userId || 1;
+    public async delete(@Param('id') id: string, @Request() req: AuthenticatedRequest): Promise<void> {
+        const userId = req?.user?.userId || 1;
         await this.transactionService.delete(parseInt(id), userId);
     }
 
