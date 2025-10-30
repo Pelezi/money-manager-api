@@ -61,7 +61,6 @@ model Subcategory {
 model Budget {
   id            Int          @id @default(autoincrement())
   userId        Int
-  name          String
   amount        Decimal      @db.Decimal(10, 2)
   type          CategoryType @default(EXPENSE)
   month         Int

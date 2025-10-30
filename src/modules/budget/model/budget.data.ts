@@ -34,7 +34,6 @@ export class BudgetData {
     public constructor(entity: Budget) {
         this.id = entity.id;
         this.userId = entity.userId;
-        this.name = entity.name;
         this.amount = (entity.amount as Decimal).toNumber();
         this.type = entity.type;
         this.month = entity.month;

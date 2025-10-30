@@ -85,7 +85,6 @@ export class BudgetService {
                 const budget = await this.prismaService.budget.create({
                     data: {
                         userId,
-                        name: `${data.name} - Month ${month}`,
                         amount: monthlyAmount,
                         type: data.type,
                         month,
@@ -104,7 +103,6 @@ export class BudgetService {
         const budget = await this.prismaService.budget.create({
             data: {
                 userId,
-                name: data.name,
                 amount: data.amount,
                 type: data.type,
                 month: data.month,
@@ -137,7 +135,6 @@ export class BudgetService {
         const updated = await this.prismaService.budget.update({
             where: { id },
             data: {
-                name: data.name,
                 amount: data.amount,
                 type: data.type,
                 month: data.month,
