@@ -168,7 +168,7 @@ npm run test
 npm run lint
 ```
 
-## 5. Healtcheck support
+## 5. Healthcheck support
 
 A healthcheck API is a REST endpoint that can be used to validate the status of the service along with its dependencies. The healthcheck API endpoint internally triggers an overall health check of the service. This can include database connection checks, system properties, disk availability and memory availability.
 
@@ -180,8 +180,14 @@ curl -H 'Authorization: Bearer ThisMustBeChanged' http://localhost:3000/api/v1/h
 
 ## 6. Project goals
 
-The goal of this project is to provide a clean and up-to-date "starter pack" for REST API projects that are built with NestJS.
+The goal of this project is to provide a comprehensive budget management API that enables users to:
+- Track monthly and annual budgets with automatic synchronization
+- Organize expenses using categories and subcategories
+- Record transactions and compare actual spending against budgets
+- Manage financial data securely with JWT authentication
+
+This implementation is inspired by Google Sheets' Monthly and Annual Budget templates, bringing spreadsheet-like budget management capabilities to a REST API.
 
 ## 7. Contributing
 
-Feel free to suggest an improvement, report a bug, or ask something: [https://github.com/saluki/nestjs-template/issues](https://github.com/saluki/nestjs-template/issues)
+Feel free to suggest an improvement, report a bug, or ask something through the project's issue tracker.
