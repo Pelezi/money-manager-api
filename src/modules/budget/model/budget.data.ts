@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Budget, BudgetType, CategoryType } from '@prisma/client';
+import { Budget, CategoryType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
 export class BudgetData {
@@ -16,14 +16,11 @@ export class BudgetData {
     @ApiProperty({ description: 'Budget amount', example: 500.00 })
     public readonly amount: number;
 
-    @ApiProperty({ description: 'Budget type', enum: ['MONTHLY', 'ANNUAL'] })
-    public readonly type: BudgetType;
+    @ApiProperty({ description: 'Budget type - EXPENSE (0) or INCOME (1)', enum: ['EXPENSE', 'INCOME'], example: 'EXPENSE' })
+    public readonly type: CategoryType;
 
-    @ApiProperty({ description: 'Budget category type', enum: ['EXPENSE', 'INCOME'], example: 'EXPENSE' })
-    public readonly budgetType: CategoryType;
-
-    @ApiProperty({ description: 'Month (1-12)', example: 1, required: false })
-    public readonly month?: number;
+    @ApiProperty({ description: 'Month (1-12)', example: 1 })
+    public readonly month: number;
 
     @ApiProperty({ description: 'Year', example: 2024 })
     public readonly year: number;
@@ -40,8 +37,7 @@ export class BudgetData {
         this.name = entity.name;
         this.amount = (entity.amount as Decimal).toNumber();
         this.type = entity.type;
-        this.budgetType = entity.budgetType;
-        this.month = entity.month || undefined;
+        this.month = entity.month;
         this.year = entity.year;
         this.subcategoryId = entity.subcategoryId;
         this.createdAt = entity.createdAt;

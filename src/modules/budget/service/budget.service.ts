@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { BudgetType, CategoryType } from '@prisma/client';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { CategoryType } from '@prisma/client';
 
 import { PrismaService } from '../../common';
 import { BudgetData, BudgetInput } from '../model';
@@ -16,11 +16,11 @@ export class BudgetService {
      *
      * @param userId User ID
      * @param year Optional year filter
-     * @param type Optional budget type filter
-     * @param budgetType Optional budget category type filter (EXPENSE/INCOME)
+     * @param type Optional budget category type filter (EXPENSE/INCOME)
+     * @param month Optional month filter
      * @returns A budget list
      */
-    public async findByUser(userId: number, year?: number, type?: BudgetType, budgetType?: CategoryType): Promise<BudgetData[]> {
+    public async findByUser(userId: number, year?: number, type?: CategoryType, month?: number): Promise<BudgetData[]> {
 
         const where: any = { userId };
 
@@ -32,8 +32,8 @@ export class BudgetService {
             where.type = type;
         }
 
-        if (budgetType) {
-            where.budgetType = budgetType;
+        if (month) {
+            where.month = month;
         }
 
         const budgets = await this.prismaService.budget.findMany({
@@ -68,42 +68,56 @@ export class BudgetService {
     }
 
     /**
-     * Create a new budget with automatic monthly/annual synchronization
+     * Create a new budget or distribute annual budget across months
      *
      * @param userId User ID
      * @param data Budget details
-     * @returns A budget created in the database
+     * @returns A budget created in the database (or first month if annual)
      */
     public async create(userId: number, data: BudgetInput): Promise<BudgetData> {
 
-        if (data.type === BudgetType.MONTHLY && !data.month) {
-            throw new BadRequestException('Month is required for monthly budgets');
+        // If annual flag is set, create budgets for all 12 months
+        if (data.annual) {
+            const monthlyAmount = data.amount / 12;
+            const budgets = [];
+
+            for (let month = 1; month <= 12; month++) {
+                const budget = await this.prismaService.budget.create({
+                    data: {
+                        userId,
+                        name: `${data.name} - Month ${month}`,
+                        amount: monthlyAmount,
+                        type: data.type,
+                        month,
+                        year: data.year,
+                        subcategoryId: data.subcategoryId
+                    }
+                });
+                budgets.push(budget);
+            }
+
+            // Return the first month's budget
+            return new BudgetData(budgets[0]);
         }
 
-        if (data.type === BudgetType.ANNUAL && data.month) {
-            throw new BadRequestException('Month should not be specified for annual budgets');
-        }
-
+        // Create a single monthly budget
         const budget = await this.prismaService.budget.create({
             data: {
                 userId,
                 name: data.name,
                 amount: data.amount,
                 type: data.type,
-                budgetType: data.budgetType,
                 month: data.month,
                 year: data.year,
                 subcategoryId: data.subcategoryId
             }
         });
 
-        await this.syncBudgets(userId, budget.year, budget.subcategoryId);
-
         return new BudgetData(budget);
     }
 
     /**
-     * Update a budget with automatic monthly/annual synchronization
+     * Update a budget
      *
      * @param id Budget ID
      * @param userId User ID
@@ -122,10 +136,15 @@ export class BudgetService {
 
         const updated = await this.prismaService.budget.update({
             where: { id },
-            data
+            data: {
+                name: data.name,
+                amount: data.amount,
+                type: data.type,
+                month: data.month,
+                year: data.year,
+                subcategoryId: data.subcategoryId
+            }
         });
-
-        await this.syncBudgets(userId, updated.year, updated.subcategoryId);
 
         return new BudgetData(updated);
     }
@@ -149,55 +168,6 @@ export class BudgetService {
         await this.prismaService.budget.delete({
             where: { id }
         });
-
-        await this.syncBudgets(userId, budget.year, budget.subcategoryId);
-    }
-
-    /**
-     * Synchronize monthly and annual budgets
-     * When monthly budgets change, update annual summary
-     * When annual budget is adjusted, distribute to monthly budgets
-     *
-     * @param userId User ID
-     * @param year Year to synchronize
-     * @param subcategoryId Subcategory ID
-     */
-    private async syncBudgets(userId: number, year: number, subcategoryId: number): Promise<void> {
-
-        const where: any = {
-            userId,
-            year,
-            subcategoryId
-        };
-
-        const monthlyBudgets = await this.prismaService.budget.findMany({
-            where: {
-                ...where,
-                type: BudgetType.MONTHLY
-            }
-        });
-
-        const totalMonthlyAmount = monthlyBudgets.reduce((sum, budget) => {
-            return sum + Number(budget.amount);
-        }, 0);
-
-        const annualBudget = await this.prismaService.budget.findFirst({
-            where: {
-                ...where,
-                type: BudgetType.ANNUAL
-            }
-        });
-
-        if (annualBudget && monthlyBudgets.length > 0) {
-            const currentAnnualAmount = Number(annualBudget.amount);
-
-            if (Math.abs(currentAnnualAmount - totalMonthlyAmount) > 0.01) {
-                await this.prismaService.budget.update({
-                    where: { id: annualBudget.id },
-                    data: { amount: totalMonthlyAmount }
-                });
-            }
-        }
     }
 
     /**
@@ -207,7 +177,7 @@ export class BudgetService {
      * @param year Year
      * @param month Optional month
      * @param subcategoryId Optional subcategory ID
-     * @param budgetType Optional budget category type filter (EXPENSE/INCOME)
+     * @param type Optional category type filter (EXPENSE/INCOME)
      * @returns Comparison data
      */
     public async getComparison(
@@ -215,13 +185,12 @@ export class BudgetService {
         year: number,
         month?: number,
         subcategoryId?: number,
-        budgetType?: CategoryType
+        type?: CategoryType
     ): Promise<{ budgeted: number; actual: number; difference: number }> {
 
         const budgetWhere: any = {
             userId,
-            year,
-            type: month ? BudgetType.MONTHLY : BudgetType.ANNUAL
+            year
         };
 
         if (month) {
@@ -232,8 +201,8 @@ export class BudgetService {
             budgetWhere.subcategoryId = subcategoryId;
         }
 
-        if (budgetType) {
-            budgetWhere.budgetType = budgetType;
+        if (type) {
+            budgetWhere.type = type;
         }
 
         const budgets = await this.prismaService.budget.findMany({
@@ -256,8 +225,8 @@ export class BudgetService {
             transactionWhere.subcategoryId = subcategoryId;
         }
 
-        if (budgetType) {
-            transactionWhere.type = budgetType;
+        if (type) {
+            transactionWhere.type = type;
         }
 
         const transactions = await this.prismaService.transaction.findMany({
