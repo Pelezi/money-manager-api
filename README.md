@@ -129,25 +129,33 @@ This project follows a well-defined modular directory structure:
 ```sh
 src/
 ├── modules
-│   ├── app.module.ts
-│   ├── common/  # The common module contains pipes, guards, service and provider used in the whole application
-│   ├── passenger/  # A module example that manages "passenger" resources
-│   │   ├── controller/
-│   │   │   └── passenger.controller.ts
-│   │   ├── flow/  # The "flow" directory contains the pipes, interceptors and everything that may change the request or response flow
-│   │   │   └── passenger.pipe.ts
-│   │   ├── model/
-│   │   │   ├── passenger.data.ts  # The model that will be returned in the response
-│   │   │   └── passenger.input.ts  # The model that is used in the request
-│   │   ├── passenger.module.ts
-│   │   ├── service/
-│   │   │   └── passenger.service.ts
-│   │   └── spec/
-│   └── tokens.ts
+│   ├── app.module.ts
+│   ├── common/          # Shared pipes, guards, services and providers
+│   ├── user/            # User management and JWT authentication
+│   │   ├── controller/
+│   │   ├── service/
+│   │   ├── model/
+│   │   └── spec/
+│   ├── category/        # Category and subcategory management
+│   │   ├── controller/
+│   │   ├── service/
+│   │   ├── model/
+│   │   └── spec/
+│   ├── budget/          # Budget management with monthly/annual sync
+│   │   ├── controller/
+│   │   ├── service/
+│   │   ├── model/
+│   │   └── spec/
+│   ├── transaction/     # Transaction tracking and aggregation
+│   │   ├── controller/
+│   │   ├── service/
+│   │   ├── model/
+│   │   └── spec/
+│   └── tokens.ts
 └── server.ts
 ```
 
-## 3. Default NPM commands
+## 4. Default NPM commands
 
 The NPM commands below are already included with this template and can be used to quickly run, build and test your project.
 
