@@ -87,11 +87,11 @@ export class BudgetService {
                 type: data.type,
                 month: data.month,
                 year: data.year,
-                categoryId: data.categoryId
+                subcategoryId: data.subcategoryId
             }
         });
 
-        await this.syncBudgets(userId, budget.year, budget.categoryId);
+        await this.syncBudgets(userId, budget.year, budget.subcategoryId);
 
         return new BudgetData(budget);
     }
@@ -119,7 +119,7 @@ export class BudgetService {
             data
         });
 
-        await this.syncBudgets(userId, updated.year, updated.categoryId);
+        await this.syncBudgets(userId, updated.year, updated.subcategoryId);
 
         return new BudgetData(updated);
     }
@@ -144,7 +144,7 @@ export class BudgetService {
             where: { id }
         });
 
-        await this.syncBudgets(userId, budget.year, budget.categoryId);
+        await this.syncBudgets(userId, budget.year, budget.subcategoryId);
     }
 
     /**
@@ -154,20 +154,15 @@ export class BudgetService {
      *
      * @param userId User ID
      * @param year Year to synchronize
-     * @param categoryId Optional category ID
+     * @param subcategoryId Subcategory ID
      */
-    private async syncBudgets(userId: number, year: number, categoryId?: number | null): Promise<void> {
+    private async syncBudgets(userId: number, year: number, subcategoryId: number): Promise<void> {
 
         const where: any = {
             userId,
-            year
+            year,
+            subcategoryId
         };
-
-        if (categoryId) {
-            where.categoryId = categoryId;
-        } else {
-            where.categoryId = null;
-        }
 
         const monthlyBudgets = await this.prismaService.budget.findMany({
             where: {
@@ -205,14 +200,14 @@ export class BudgetService {
      * @param userId User ID
      * @param year Year
      * @param month Optional month
-     * @param categoryId Optional category ID
+     * @param subcategoryId Optional subcategory ID
      * @returns Comparison data
      */
     public async getComparison(
         userId: number,
         year: number,
         month?: number,
-        categoryId?: number
+        subcategoryId?: number
     ): Promise<{ budgeted: number; actual: number; difference: number }> {
 
         const budgetWhere: any = {
@@ -225,8 +220,8 @@ export class BudgetService {
             budgetWhere.month = month;
         }
 
-        if (categoryId) {
-            budgetWhere.categoryId = categoryId;
+        if (subcategoryId) {
+            budgetWhere.subcategoryId = subcategoryId;
         }
 
         const budgets = await this.prismaService.budget.findMany({
@@ -245,8 +240,8 @@ export class BudgetService {
             }
         };
 
-        if (categoryId) {
-            transactionWhere.categoryId = categoryId;
+        if (subcategoryId) {
+            transactionWhere.subcategoryId = subcategoryId;
         }
 
         const transactions = await this.prismaService.transaction.findMany({

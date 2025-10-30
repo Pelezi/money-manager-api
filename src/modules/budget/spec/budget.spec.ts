@@ -23,6 +23,7 @@ describe('Budget API', () => {
     let prismaService: PrismaService;
     let authToken: string;
     let userId: number;
+    let subcategoryId: number;
 
     beforeAll(async () => {
 
@@ -37,6 +38,7 @@ describe('Budget API', () => {
 
         await prismaService.user.deleteMany({});
         await prismaService.budget.deleteMany({});
+        await prismaService.subcategory.deleteMany({});
         await prismaService.category.deleteMany({});
 
         const user = await prismaService.user.create({
@@ -49,6 +51,25 @@ describe('Budget API', () => {
         });
         userId = user.id;
 
+        // Create a test category and subcategory
+        const category = await prismaService.category.create({
+            data: {
+                userId: user.id,
+                name: 'Groceries',
+                description: 'Food and household items'
+            }
+        });
+
+        const subcategory = await prismaService.subcategory.create({
+            data: {
+                userId: user.id,
+                categoryId: category.id,
+                name: 'Fresh Produce',
+                description: 'Fruits and vegetables'
+            }
+        });
+        subcategoryId = subcategory.id;
+
         authToken = jwt.sign({ userId: user.id, role: 'restricted' }, `${process.env.JWT_SECRET}`, {
             algorithm: 'HS256',
             issuer: `${process.env.JWT_ISSUER}`
@@ -57,6 +78,7 @@ describe('Budget API', () => {
 
     afterAll(async () => {
         await prismaService.budget.deleteMany({});
+        await prismaService.subcategory.deleteMany({});
         await prismaService.category.deleteMany({});
         await prismaService.user.deleteMany({});
         await prismaService.$disconnect();
@@ -76,7 +98,8 @@ describe('Budget API', () => {
                 amount: 500,
                 type: BudgetType.MONTHLY,
                 month: 1,
-                year: 2024
+                year: 2024,
+                subcategoryId
             })
             .expect(HttpStatus.CREATED)
             .then(response => {
@@ -95,7 +118,8 @@ describe('Budget API', () => {
                 name: 'Annual Groceries',
                 amount: 6000,
                 type: BudgetType.ANNUAL,
-                year: 2024
+                year: 2024,
+                subcategoryId
             })
             .expect(HttpStatus.CREATED)
             .then(response => {
@@ -114,7 +138,8 @@ describe('Budget API', () => {
                 name: 'Annual Groceries',
                 amount: 0,
                 type: BudgetType.ANNUAL,
-                year: 2024
+                year: 2024,
+                subcategoryId
             });
 
         await request(app.getHttpServer() as App)
@@ -125,7 +150,8 @@ describe('Budget API', () => {
                 amount: 500,
                 type: BudgetType.MONTHLY,
                 month: 1,
-                year: 2024
+                year: 2024,
+                subcategoryId
             });
 
         await request(app.getHttpServer() as App)
@@ -136,14 +162,16 @@ describe('Budget API', () => {
                 amount: 600,
                 type: BudgetType.MONTHLY,
                 month: 2,
-                year: 2024
+                year: 2024,
+                subcategoryId
             });
 
         const budgets = await prismaService.budget.findMany({
             where: {
                 userId,
                 year: 2024,
-                type: BudgetType.ANNUAL
+                type: BudgetType.ANNUAL,
+                subcategoryId
             }
         });
 

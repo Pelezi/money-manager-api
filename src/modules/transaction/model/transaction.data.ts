@@ -10,8 +10,8 @@ export class TransactionData {
     @ApiProperty({ description: 'User ID', example: 1 })
     public readonly userId: number;
 
-    @ApiProperty({ description: 'Category ID', example: 1 })
-    public readonly categoryId: number;
+    @ApiProperty({ description: 'Subcategory ID', example: 1 })
+    public readonly subcategoryId: number;
 
     @ApiProperty({ description: 'Transaction amount', example: 50.00 })
     public readonly amount: number;
@@ -28,7 +28,7 @@ export class TransactionData {
     public constructor(entity: Transaction) {
         this.id = entity.id;
         this.userId = entity.userId;
-        this.categoryId = entity.categoryId;
+        this.subcategoryId = entity.subcategoryId;
         this.amount = (entity.amount as Decimal).toNumber();
         this.description = entity.description || undefined;
         this.date = entity.date;

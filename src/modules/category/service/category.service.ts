@@ -19,10 +19,7 @@ export class CategoryService {
     public async findByUser(userId: number): Promise<CategoryData[]> {
 
         const categories = await this.prismaService.category.findMany({
-            where: { userId },
-            include: {
-                subcategories: true
-            }
+            where: { userId }
         });
 
         return categories.map(category => new CategoryData(category));
@@ -61,8 +58,7 @@ export class CategoryService {
             data: {
                 userId,
                 name: data.name,
-                description: data.description,
-                parentId: data.parentId
+                description: data.description
             }
         });
 

@@ -17,6 +17,6 @@ export class BudgetInput {
     @ApiProperty({ description: 'Year', example: 2024 })
     public readonly year: number;
 
-    @ApiProperty({ description: 'Category ID', example: 1, required: false })
-    public readonly categoryId?: number;
+    @ApiProperty({ description: 'Subcategory ID', example: 1 })
+    public readonly subcategoryId: number;
 }

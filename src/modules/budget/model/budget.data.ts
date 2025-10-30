@@ -25,8 +25,8 @@ export class BudgetData {
     @ApiProperty({ description: 'Year', example: 2024 })
     public readonly year: number;
 
-    @ApiProperty({ description: 'Category ID', example: 1, required: false })
-    public readonly categoryId?: number;
+    @ApiProperty({ description: 'Subcategory ID', example: 1 })
+    public readonly subcategoryId: number;
 
     @ApiProperty({ description: 'Created at', example: '2024-01-01T00:00:00Z' })
     public readonly createdAt: Date;
@@ -39,7 +39,7 @@ export class BudgetData {
         this.type = entity.type;
         this.month = entity.month || undefined;
         this.year = entity.year;
-        this.categoryId = entity.categoryId || undefined;
+        this.subcategoryId = entity.subcategoryId;
         this.createdAt = entity.createdAt;
     }
 

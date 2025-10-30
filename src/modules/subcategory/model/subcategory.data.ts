@@ -1,26 +1,30 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Category } from '@prisma/client';
+import { Subcategory } from '@prisma/client';
 
-export class CategoryData {
+export class SubcategoryData {
 
-    @ApiProperty({ description: 'Category unique ID', example: 1 })
+    @ApiProperty({ description: 'Subcategory unique ID', example: 1 })
     public readonly id: number;
 
     @ApiProperty({ description: 'User ID', example: 1 })
     public readonly userId: number;
 
-    @ApiProperty({ description: 'Category name', example: 'Groceries' })
+    @ApiProperty({ description: 'Category ID', example: 1 })
+    public readonly categoryId: number;
+
+    @ApiProperty({ description: 'Subcategory name', example: 'Fresh Produce' })
     public readonly name: string;
 
-    @ApiProperty({ description: 'Category description', example: 'Food and household items', required: false })
+    @ApiProperty({ description: 'Subcategory description', example: 'Fruits and vegetables', required: false })
     public readonly description?: string;
 
     @ApiProperty({ description: 'Created at', example: '2024-01-01T00:00:00Z' })
     public readonly createdAt: Date;
 
-    public constructor(entity: Category) {
+    public constructor(entity: Subcategory) {
         this.id = entity.id;
         this.userId = entity.userId;
+        this.categoryId = entity.categoryId;
         this.name = entity.name;
         this.description = entity.description || undefined;
         this.createdAt = entity.createdAt;

@@ -39,12 +39,12 @@ export class BudgetController {
     @ApiOperation({ summary: 'Get budget vs actual spending comparison' })
     @ApiQuery({ name: 'year', required: true, description: 'Year' })
     @ApiQuery({ name: 'month', required: false, description: 'Month (1-12)' })
-    @ApiQuery({ name: 'categoryId', required: false, description: 'Category ID' })
+    @ApiQuery({ name: 'subcategoryId', required: false, description: 'Subcategory ID' })
     @ApiResponse({ status: HttpStatus.OK })
     public async getComparison(
         @Query('year') year: string,
         @Query('month') month?: string,
-        @Query('categoryId') categoryId?: string,
+        @Query('subcategoryId') subcategoryId?: string,
         @Request() req?: any
     ): Promise<{ budgeted: number; actual: number; difference: number }> {
         const userId = req.user?.userId || 1;
@@ -52,7 +52,7 @@ export class BudgetController {
             userId,
             parseInt(year),
             month ? parseInt(month) : undefined,
-            categoryId ? parseInt(categoryId) : undefined
+            subcategoryId ? parseInt(subcategoryId) : undefined
         );
     }
 

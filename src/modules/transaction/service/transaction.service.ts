@@ -14,22 +14,22 @@ export class TransactionService {
      * Find all transactions for a user
      *
      * @param userId User ID
-     * @param categoryId Optional category filter
+     * @param subcategoryId Optional subcategory filter
      * @param startDate Optional start date filter
      * @param endDate Optional end date filter
      * @returns A transaction list
      */
     public async findByUser(
         userId: number,
-        categoryId?: number,
+        subcategoryId?: number,
         startDate?: Date,
         endDate?: Date
     ): Promise<TransactionData[]> {
 
         const where: any = { userId };
 
-        if (categoryId) {
-            where.categoryId = categoryId;
+        if (subcategoryId) {
+            where.subcategoryId = subcategoryId;
         }
 
         if (startDate || endDate) {
@@ -84,7 +84,7 @@ export class TransactionService {
         const transaction = await this.prismaService.transaction.create({
             data: {
                 userId,
-                categoryId: data.categoryId,
+                subcategoryId: data.subcategoryId,
                 amount: data.amount,
                 description: data.description,
                 date: data.date
@@ -142,7 +142,7 @@ export class TransactionService {
     }
 
     /**
-     * Get aggregated spending by category
+     * Get aggregated spending by subcategory
      *
      * @param userId User ID
      * @param startDate Start date
@@ -153,7 +153,7 @@ export class TransactionService {
         userId: number,
         startDate: Date,
         endDate: Date
-    ): Promise<{ categoryId: number; total: number }[]> {
+    ): Promise<{ subcategoryId: number; total: number }[]> {
 
         const transactions = await this.prismaService.transaction.findMany({
             where: {
@@ -166,16 +166,16 @@ export class TransactionService {
         });
 
         const aggregated = transactions.reduce((acc, transaction) => {
-            const categoryId = transaction.categoryId;
-            if (!acc[categoryId]) {
-                acc[categoryId] = 0;
+            const subcategoryId = transaction.subcategoryId;
+            if (!acc[subcategoryId]) {
+                acc[subcategoryId] = 0;
             }
-            acc[categoryId] += Number(transaction.amount);
+            acc[subcategoryId] += Number(transaction.amount);
             return acc;
         }, {} as Record<number, number>);
 
-        return Object.entries(aggregated).map(([categoryId, total]) => ({
-            categoryId: parseInt(categoryId),
+        return Object.entries(aggregated).map(([subcategoryId, total]) => ({
+            subcategoryId: parseInt(subcategoryId),
             total
         }));
     }

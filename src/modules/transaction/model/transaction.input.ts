@@ -1,8 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class TransactionInput {
-    @ApiProperty({ description: 'Category ID', example: 1 })
-    public readonly categoryId: number;
+    @ApiProperty({ description: 'Subcategory ID', example: 1 })
+    public readonly subcategoryId: number;
 
     @ApiProperty({ description: 'Transaction amount', example: 50.00 })
     public readonly amount: number;

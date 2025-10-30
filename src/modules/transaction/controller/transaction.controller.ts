@@ -18,12 +18,12 @@ export class TransactionController {
 
     @Get()
     @ApiOperation({ summary: 'Find all transactions for the authenticated user' })
-    @ApiQuery({ name: 'categoryId', required: false, description: 'Filter by category ID' })
+    @ApiQuery({ name: 'subcategoryId', required: false, description: 'Filter by subcategory ID' })
     @ApiQuery({ name: 'startDate', required: false, description: 'Filter by start date (ISO format)' })
     @ApiQuery({ name: 'endDate', required: false, description: 'Filter by end date (ISO format)' })
     @ApiResponse({ status: HttpStatus.OK, isArray: true, type: TransactionData })
     public async find(
-        @Query('categoryId') categoryId?: string,
+        @Query('subcategoryId') subcategoryId?: string,
         @Query('startDate') startDate?: string,
         @Query('endDate') endDate?: string,
         @Request() req?: any
@@ -31,14 +31,14 @@ export class TransactionController {
         const userId = req.user?.userId || 1;
         return this.transactionService.findByUser(
             userId,
-            categoryId ? parseInt(categoryId) : undefined,
+            subcategoryId ? parseInt(subcategoryId) : undefined,
             startDate ? new Date(startDate) : undefined,
             endDate ? new Date(endDate) : undefined
         );
     }
 
     @Get('aggregated')
-    @ApiOperation({ summary: 'Get aggregated spending by category' })
+    @ApiOperation({ summary: 'Get aggregated spending by subcategory' })
     @ApiQuery({ name: 'startDate', required: true, description: 'Start date (ISO format)' })
     @ApiQuery({ name: 'endDate', required: true, description: 'End date (ISO format)' })
     @ApiResponse({ status: HttpStatus.OK })
@@ -46,7 +46,7 @@ export class TransactionController {
         @Query('startDate') startDate: string,
         @Query('endDate') endDate: string,
         @Request() req: any
-    ): Promise<{ categoryId: number; total: number }[]> {
+    ): Promise<{ subcategoryId: number; total: number }[]> {
         const userId = req.user?.userId || 1;
         return this.transactionService.getAggregatedSpending(
             userId,
