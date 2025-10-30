@@ -66,7 +66,8 @@ export class SubcategoryService {
                 userId,
                 categoryId: data.categoryId,
                 name: data.name,
-                description: data.description
+                description: data.description,
+                type: data.type
             }
         });
 

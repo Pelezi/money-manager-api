@@ -58,7 +58,8 @@ export class CategoryService {
             data: {
                 userId,
                 name: data.name,
-                description: data.description
+                description: data.description,
+                type: data.type
             }
         });
 

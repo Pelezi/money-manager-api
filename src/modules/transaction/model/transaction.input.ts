@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { CategoryType } from '@prisma/client';
 
 export class TransactionInput {
     @ApiProperty({ description: 'Subcategory ID', example: 1 })
@@ -12,4 +13,7 @@ export class TransactionInput {
 
     @ApiProperty({ description: 'Transaction date', example: '2024-01-15T00:00:00Z' })
     public readonly date: Date;
+
+    @ApiProperty({ description: 'Transaction type - EXPENSE (0) or INCOME (1)', enum: ['EXPENSE', 'INCOME'], example: 'EXPENSE', required: false })
+    public readonly type?: CategoryType;
 }

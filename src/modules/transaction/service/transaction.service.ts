@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { CategoryType } from '@prisma/client';
 
 import { PrismaService } from '../../common';
 import { TransactionData, TransactionInput } from '../model';
@@ -17,13 +18,15 @@ export class TransactionService {
      * @param subcategoryId Optional subcategory filter
      * @param startDate Optional start date filter
      * @param endDate Optional end date filter
+     * @param type Optional transaction type filter (EXPENSE/INCOME)
      * @returns A transaction list
      */
     public async findByUser(
         userId: number,
         subcategoryId?: number,
         startDate?: Date,
-        endDate?: Date
+        endDate?: Date,
+        type?: CategoryType
     ): Promise<TransactionData[]> {
 
         const where: any = { userId };
@@ -40,6 +43,10 @@ export class TransactionService {
             if (endDate) {
                 where.date.lte = endDate;
             }
+        }
+
+        if (type) {
+            where.type = type;
         }
 
         const transactions = await this.prismaService.transaction.findMany({
@@ -87,7 +94,8 @@ export class TransactionService {
                 subcategoryId: data.subcategoryId,
                 amount: data.amount,
                 description: data.description,
-                date: data.date
+                date: data.date,
+                type: data.type
             }
         });
 

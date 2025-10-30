@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query, UseGuards, Request } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { CategoryType } from '@prisma/client';
 
 import { RestrictedGuard } from '../../common';
 
@@ -21,11 +22,13 @@ export class TransactionController {
     @ApiQuery({ name: 'subcategoryId', required: false, description: 'Filter by subcategory ID' })
     @ApiQuery({ name: 'startDate', required: false, description: 'Filter by start date (ISO format)' })
     @ApiQuery({ name: 'endDate', required: false, description: 'Filter by end date (ISO format)' })
+    @ApiQuery({ name: 'type', required: false, enum: ['EXPENSE', 'INCOME'], description: 'Filter by transaction type (0=EXPENSE, 1=INCOME)' })
     @ApiResponse({ status: HttpStatus.OK, isArray: true, type: TransactionData })
     public async find(
         @Query('subcategoryId') subcategoryId?: string,
         @Query('startDate') startDate?: string,
         @Query('endDate') endDate?: string,
+        @Query('type') type?: CategoryType,
         @Request() req?: any
     ): Promise<TransactionData[]> {
         const userId = req.user?.userId || 1;
@@ -33,7 +36,8 @@ export class TransactionController {
             userId,
             subcategoryId ? parseInt(subcategoryId) : undefined,
             startDate ? new Date(startDate) : undefined,
-            endDate ? new Date(endDate) : undefined
+            endDate ? new Date(endDate) : undefined,
+            type
         );
     }
 

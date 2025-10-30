@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { BudgetType } from '@prisma/client';
+import { BudgetType, CategoryType } from '@prisma/client';
 
 import { PrismaService } from '../../common';
 import { BudgetData, BudgetInput } from '../model';
@@ -17,9 +17,10 @@ export class BudgetService {
      * @param userId User ID
      * @param year Optional year filter
      * @param type Optional budget type filter
+     * @param budgetType Optional budget category type filter (EXPENSE/INCOME)
      * @returns A budget list
      */
-    public async findByUser(userId: number, year?: number, type?: BudgetType): Promise<BudgetData[]> {
+    public async findByUser(userId: number, year?: number, type?: BudgetType, budgetType?: CategoryType): Promise<BudgetData[]> {
 
         const where: any = { userId };
 
@@ -29,6 +30,10 @@ export class BudgetService {
 
         if (type) {
             where.type = type;
+        }
+
+        if (budgetType) {
+            where.budgetType = budgetType;
         }
 
         const budgets = await this.prismaService.budget.findMany({
@@ -85,6 +90,7 @@ export class BudgetService {
                 name: data.name,
                 amount: data.amount,
                 type: data.type,
+                budgetType: data.budgetType,
                 month: data.month,
                 year: data.year,
                 subcategoryId: data.subcategoryId
@@ -201,13 +207,15 @@ export class BudgetService {
      * @param year Year
      * @param month Optional month
      * @param subcategoryId Optional subcategory ID
+     * @param budgetType Optional budget category type filter (EXPENSE/INCOME)
      * @returns Comparison data
      */
     public async getComparison(
         userId: number,
         year: number,
         month?: number,
-        subcategoryId?: number
+        subcategoryId?: number,
+        budgetType?: CategoryType
     ): Promise<{ budgeted: number; actual: number; difference: number }> {
 
         const budgetWhere: any = {
@@ -222,6 +230,10 @@ export class BudgetService {
 
         if (subcategoryId) {
             budgetWhere.subcategoryId = subcategoryId;
+        }
+
+        if (budgetType) {
+            budgetWhere.budgetType = budgetType;
         }
 
         const budgets = await this.prismaService.budget.findMany({
@@ -242,6 +254,10 @@ export class BudgetService {
 
         if (subcategoryId) {
             transactionWhere.subcategoryId = subcategoryId;
+        }
+
+        if (budgetType) {
+            transactionWhere.type = budgetType;
         }
 
         const transactions = await this.prismaService.transaction.findMany({

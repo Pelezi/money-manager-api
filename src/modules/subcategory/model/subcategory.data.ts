@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Subcategory } from '@prisma/client';
+import { Subcategory, CategoryType } from '@prisma/client';
 
 export class SubcategoryData {
 
@@ -18,6 +18,9 @@ export class SubcategoryData {
     @ApiProperty({ description: 'Subcategory description', example: 'Fruits and vegetables', required: false })
     public readonly description?: string;
 
+    @ApiProperty({ description: 'Subcategory type', enum: ['EXPENSE', 'INCOME'], example: 'EXPENSE' })
+    public readonly type: CategoryType;
+
     @ApiProperty({ description: 'Created at', example: '2024-01-01T00:00:00Z' })
     public readonly createdAt: Date;
 
@@ -27,6 +30,7 @@ export class SubcategoryData {
         this.categoryId = entity.categoryId;
         this.name = entity.name;
         this.description = entity.description || undefined;
+        this.type = entity.type;
         this.createdAt = entity.createdAt;
     }
 

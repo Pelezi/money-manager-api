@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Transaction } from '@prisma/client';
+import { Transaction, CategoryType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
 export class TransactionData {
@@ -22,6 +22,9 @@ export class TransactionData {
     @ApiProperty({ description: 'Transaction date', example: '2024-01-15T00:00:00Z' })
     public readonly date: Date;
 
+    @ApiProperty({ description: 'Transaction type', enum: ['EXPENSE', 'INCOME'], example: 'EXPENSE' })
+    public readonly type: CategoryType;
+
     @ApiProperty({ description: 'Created at', example: '2024-01-01T00:00:00Z' })
     public readonly createdAt: Date;
 
@@ -32,6 +35,7 @@ export class TransactionData {
         this.amount = (entity.amount as Decimal).toNumber();
         this.description = entity.description || undefined;
         this.date = entity.date;
+        this.type = entity.type;
         this.createdAt = entity.createdAt;
     }
 
