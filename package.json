@@ -26,6 +26,8 @@
     "@nestjs/terminus": "^10.2.0",
     "@nestjs/testing": "^10.3.0",
     "@prisma/client": "^6.18.0",
+    "@types/bcrypt": "^6.0.0",
+    "bcrypt": "^6.0.0",
     "fastify": "^4.25.2",
     "joi": "^17.11.0",
     "jsonwebtoken": "^9.0.2",

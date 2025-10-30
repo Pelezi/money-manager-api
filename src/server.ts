@@ -19,8 +19,8 @@ const API_DEFAULT_PREFIX = '/api/v1/';
  *
  * @todo Change the constants below following your API requirements
  */
-const SWAGGER_TITLE = 'Passenger API';
-const SWAGGER_DESCRIPTION = 'API used for passenger management';
+const SWAGGER_TITLE = 'Money Manager API';
+const SWAGGER_DESCRIPTION = 'API for managing budgets, categories, and transactions with monthly/annual synchronization';
 const SWAGGER_PREFIX = '/docs';
 
 /**
