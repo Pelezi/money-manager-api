@@ -1,16 +1,26 @@
 
-# NestJS 10 API project template
+# Money Manager API
 
 [![License](https://img.shields.io/github/license/saluki/nestjs-template.svg)](https://github.com/saluki/nestjs-template/blob/master/LICENSE)
 
-Scaffold quickly your next [NestJS 10](https://nestjs.com/) API project with 
-❤️ using this template
+A comprehensive budget management REST API built with NestJS 10, inspired by Google Sheets' Monthly and Annual Budget templates.
 
-- Crafted for Docker environments (Dockerfile support and environment variables)
-- REST API with [Prisma](https://www.prisma.io/) support 
-- Swagger documentation, [Joi](https://github.com/hapijs/joi) validation, Winston logger, ...
-- Folder structure, code samples and best practices
-- Fast HTTP server with [Fastify](https://fastify.dev/)
+## Features
+
+- **User Management**: JWT-based authentication for secure access
+- **Budget Management**: Create and manage monthly and annual budgets with automatic synchronization
+  - Monthly budgets automatically update annual summaries
+  - Annual budget adjustments can be propagated to monthly budgets
+- **Category Management**: Organize expenses with categories and subcategories
+  - Support for hierarchical category structure
+  - Parent-child relationships for flexible grouping
+- **Transaction Tracking**: Record actual spending and compare against budgets
+  - Aggregate spending by category
+  - Budget vs. actual comparison reports
+- **REST API**: Fast API with [Fastify](https://fastify.dev/)
+- **Database ORM**: [Prisma](https://www.prisma.io/) for type-safe database access
+- **API Documentation**: Auto-generated Swagger documentation
+- **Docker Support**: Ready for containerized environments
 
 ## 1. Getting started
 
@@ -19,63 +29,102 @@ Scaffold quickly your next [NestJS 10](https://nestjs.com/) API project with
 Before starting, make sure you have at least those components on your workstation:
 
 - An up-to-date release of [NodeJS](https://nodejs.org/) such as 20.x and NPM
-- A database such as PostgreSQL. You may use the provided `docker-compose.yml` file.
+- A PostgreSQL database. You may use the provided `docker-compose.yml` file.
 
 [Docker](https://www.docker.com/) may also be useful for advanced testing and image building, although it is not required for development.
 
 ### 1.2 Project configuration
 
-Start by cloning this project on your workstation or click on ["Use this template"](https://github.com/new?template_name=nestjs-template&template_owner=Saluki) in Github.
-
-``` sh
-git clone https://github.com/saluki/nestjs-template my-project
-```
-
-The next thing will be to install all the dependencies of the project.
+Install all the dependencies of the project:
 
 ```sh
-cd ./my-project
 npm install
 ```
 
-Once the dependencies are installed, you can now configure your project by creating a new `.env` file containing the environment variables used for development.
+Once the dependencies are installed, configure your project by creating a new `.env` file containing the environment variables:
 
-```
+```sh
 cp .env.example .env
-vi .env
 ```
 
 For a standard development configuration, you can leave the default values for `API_PORT`, `API_PREFIX` and `API_CORS` under the `Api configuration` section. The `SWAGGER_ENABLE` rule allows you to control the Swagger documentation module for NestJS. Leave it to `1` when starting this example.
 
-Next comes to the Prisma configuration: change the DATABASE_URL according to your own database setup.
+Configure the `DATABASE_URL` according to your own database setup.
 
-Last but not least, define a `JWT_SECRET` to sign the JWT tokens or leave the default value in a development environment. Update the `JWT_ISSUER` to the correct value as set in the JWT. 
+Define a `JWT_SECRET` to sign the JWT tokens or leave the default value in a development environment. Update the `JWT_ISSUER` to the correct value.
 
-### 1.3 Launch and discover
+### 1.3 Database Setup
 
-You are now ready to launch the NestJS application using the command below.
+If you have Docker installed, you can start a PostgreSQL database using:
 
 ```sh
-# For use in development environments only, performs a Prisma migration
-npx prisma migrate dev
+docker-compose up -d
+```
 
+Then run the Prisma migrations:
+
+```sh
+npx prisma migrate dev
+```
+
+### 1.4 Launch and discover
+
+You are now ready to launch the NestJS application:
+
+```sh
 # Launch the development server with TSNode
 npm run dev
 ```
 
-You can now head to `http://localhost:3000/docs` and see your API Swagger docs. The example passenger API is located at the `http://localhost:3000/api/v1/passengers` endpoint.
+You can now head to `http://localhost:3000/docs` and see your API Swagger docs.
 
-For restricted routes, for testing you can use the below JWT
+## 2. API Endpoints
 
-```
-eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJERUZBVUxUX0lTU1VFUiIsImlhdCI6MTYzMTEwNDMzNCwicm9sZSI6InJlc3RyaWN0ZWQifQ.o2HcQBBpx-EJMcUFiqmAiD_jZ5J92gRDOyhybT9FakE
-```
+### Authentication
 
-> The sample JWT above does not have an expiry, remember to use a valid JWT and enforce the required claims in production
+- `POST /api/v1/users/register` - Register a new user
+- `POST /api/v1/users/login` - Login and receive JWT token
 
-## 2. Project structure
+### Users
 
-This template was made with a well-defined directory structure.
+- `GET /api/v1/users` - Get all users (requires authentication)
+
+### Categories
+
+- `GET /api/v1/categories` - Get all categories for authenticated user
+- `GET /api/v1/categories/:id` - Get a specific category
+- `POST /api/v1/categories` - Create a new category (can specify parentId for subcategories)
+- `PUT /api/v1/categories/:id` - Update a category
+- `DELETE /api/v1/categories/:id` - Delete a category
+
+### Budgets
+
+- `GET /api/v1/budgets` - Get all budgets (supports filtering by year and type)
+- `GET /api/v1/budgets/:id` - Get a specific budget
+- `GET /api/v1/budgets/comparison` - Compare budgeted vs actual spending
+- `POST /api/v1/budgets` - Create a new budget (MONTHLY or ANNUAL)
+- `PUT /api/v1/budgets/:id` - Update a budget (triggers auto-sync)
+- `DELETE /api/v1/budgets/:id` - Delete a budget
+
+### Transactions
+
+- `GET /api/v1/transactions` - Get all transactions (supports filtering)
+- `GET /api/v1/transactions/:id` - Get a specific transaction
+- `GET /api/v1/transactions/aggregated` - Get aggregated spending by category
+- `POST /api/v1/transactions` - Create a new transaction
+- `PUT /api/v1/transactions/:id` - Update a transaction
+- `DELETE /api/v1/transactions/:id` - Delete a transaction
+
+### Budget Synchronization
+
+The API automatically synchronizes monthly and annual budgets:
+- When monthly budgets are created or updated, the corresponding annual budget is automatically updated to reflect the sum of all monthly budgets for that year and category
+- This ensures consistency between monthly planning and annual summaries
+- Both monthly and annual budgets can be independently managed while maintaining synchronization
+
+## 3. Project structure
+
+This project follows a well-defined modular directory structure:
 
 ```sh
 src/
