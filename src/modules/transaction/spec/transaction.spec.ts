@@ -36,10 +36,16 @@ describe('Transaction Aggregated API', () => {
         await app.init();
         await app.getHttpAdapter().getInstance().ready();
 
-        await prismaService.user.deleteMany({});
-        await prismaService.transaction.deleteMany({});
-        await prismaService.subcategory.deleteMany({});
-        await prismaService.category.deleteMany({});
+        // Clean up only this test's data by email
+        const existingUser = await prismaService.user.findUnique({
+            where: { email: 'transaction@example.com' }
+        });
+        if (existingUser) {
+            await prismaService.transaction.deleteMany({ where: { userId: existingUser.id } });
+            await prismaService.subcategory.deleteMany({ where: { userId: existingUser.id } });
+            await prismaService.category.deleteMany({ where: { userId: existingUser.id } });
+            await prismaService.user.delete({ where: { id: existingUser.id } });
+        }
 
         const user = await prismaService.user.create({
             data: {
