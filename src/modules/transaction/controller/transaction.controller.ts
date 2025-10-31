@@ -1,4 +1,4 @@
-import { Controller, Get, HttpStatus, Query } from '@nestjs/common';
+import { BadRequestException, Controller, Get, HttpStatus, Query } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { TransactionAggregatedData } from '../model';
@@ -19,6 +19,9 @@ export class TransactionController {
     public async findAggregatedByYear(@Query('year') year: string): Promise<TransactionAggregatedData[]> {
 
         const yearNumber = parseInt(year, 10);
+        if (isNaN(yearNumber)) {
+            throw new BadRequestException('Invalid year parameter');
+        }
         return this.transactionService.findAggregatedByYear(yearNumber);
     }
 

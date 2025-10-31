@@ -1,4 +1,4 @@
-import { Controller, Get, HttpStatus, Query } from '@nestjs/common';
+import { BadRequestException, Controller, Get, HttpStatus, Query } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { ExpenseData } from '../model';
@@ -19,6 +19,9 @@ export class ExpenseController {
     public async findByYear(@Query('year') year: string): Promise<ExpenseData[]> {
 
         const yearNumber = parseInt(year, 10);
+        if (isNaN(yearNumber)) {
+            throw new BadRequestException('Invalid year parameter');
+        }
         return this.expenseService.findByYear(yearNumber);
     }
 
