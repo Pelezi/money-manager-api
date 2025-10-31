@@ -121,9 +121,18 @@ export class TransactionService {
             throw new NotFoundException('Transaction not found');
         }
 
+        const updateData: Prisma.TransactionUpdateInput = {
+            ...(data.subcategoryId !== undefined && { subcategoryId: data.subcategoryId }),
+            ...(data.title !== undefined && { title: data.title }),
+            ...(data.amount !== undefined && { amount: data.amount }),
+            ...(data.description !== undefined && { description: data.description }),
+            ...(data.date !== undefined && { date: data.date + (data.time ? `T${data.time}Z` : 'T00:00:00Z') }),
+            ...(data.type !== undefined && { type: data.type })
+        };
+
         const updated = await this.prismaService.transaction.update({
             where: { id },
-            data
+            data: updateData
         });
 
         return new TransactionData(updated);

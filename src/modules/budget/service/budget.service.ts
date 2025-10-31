@@ -132,15 +132,17 @@ export class BudgetService {
             throw new NotFoundException('Budget not found');
         }
 
+        const updateData: Prisma.BudgetUpdateInput = {
+            ...(data.amount !== undefined && { amount: data.amount }),
+            ...(data.type !== undefined && { type: data.type }),
+            ...(data.month !== undefined && { month: data.month }),
+            ...(data.year !== undefined && { year: data.year }),
+            ...(data.subcategoryId !== undefined && { subcategoryId: data.subcategoryId })
+        };
+
         const updated = await this.prismaService.budget.update({
             where: { id },
-            data: {
-                amount: data.amount,
-                type: data.type,
-                month: data.month,
-                year: data.year,
-                subcategoryId: data.subcategoryId
-            }
+            data: updateData
         });
 
         return new BudgetData(updated);

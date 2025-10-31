@@ -41,7 +41,56 @@ function createSwagger(app: INestApplication) {
         .build();
 
     const document = SwaggerModule.createDocument(app, options);
-    SwaggerModule.setup(SWAGGER_PREFIX, app, document);
+    
+    // Custom CSS to improve text contrast
+    const customCss = `
+        .swagger-ui .info .title,
+        .swagger-ui .info .description,
+        .swagger-ui .info p,
+        .swagger-ui .opblock .opblock-summary-description,
+        .swagger-ui .opblock .opblock-summary-operation-id,
+        .swagger-ui .opblock .opblock-summary-path,
+        .swagger-ui .opblock-description-wrapper p,
+        .swagger-ui .parameter__name,
+        .swagger-ui .parameter__type,
+        .swagger-ui .response-col_status,
+        .swagger-ui .response-col_description,
+        .swagger-ui table thead tr th,
+        .swagger-ui table tbody tr td,
+        .swagger-ui .model,
+        .swagger-ui .model-title,
+        .swagger-ui .prop-type,
+        .swagger-ui .prop-format,
+        .swagger-ui select,
+        .swagger-ui label,
+        .swagger-ui input[type="text"],
+        .swagger-ui textarea {
+            color: #1a1a1a !important;
+        }
+        
+        .swagger-ui .info .title {
+            color: #000000 !important;
+            font-weight: 600 !important;
+        }
+        
+        .swagger-ui .opblock-tag {
+            color: #000000 !important;
+            font-weight: 600 !important;
+        }
+        
+        .swagger-ui .opblock .opblock-summary-description {
+            font-weight: 500 !important;
+        }
+        
+        .swagger-ui .markdown p,
+        .swagger-ui .markdown code {
+            color: #2a2a2a !important;
+        }
+    `;
+    
+    SwaggerModule.setup(SWAGGER_PREFIX, app, document, {
+        customCss
+    });
 }
 
 /**
