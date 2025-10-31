@@ -95,7 +95,7 @@ export class TransactionService {
                 title: data.title,
                 amount: data.amount,
                 description: data.description,
-                date: data.date,
+                date: data.date + (data.time ? `T${data.time}Z` : 'T00:00:00Z'),
                 type: data.type
             }
         });

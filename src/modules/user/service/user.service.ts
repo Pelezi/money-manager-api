@@ -3,6 +3,7 @@ import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 
 import { PrismaService } from '../../common';
+import { Role } from '../../tokens';
 import { UserData, UserInput, LoginInput } from '../model';
 
 @Injectable()
@@ -90,7 +91,11 @@ export class UserService {
         }
 
         const token = jwt.sign(
-            { userId: user.id, email: user.email },
+            { 
+                userId: user.id, 
+                email: user.email,
+                role: Role.RESTRICTED
+            },
             process.env.JWT_SECRET || 'secret',
             { expiresIn: '24h', issuer: process.env.JWT_ISSUER || 'IssuerApplication' }
         );
