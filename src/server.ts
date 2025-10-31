@@ -19,8 +19,8 @@ const API_DEFAULT_PREFIX = '/api/v1/';
  *
  * @todo Change the constants below following your API requirements
  */
-const SWAGGER_TITLE = 'Money Manager API';
-const SWAGGER_DESCRIPTION = 'API for managing budgets, categories, and transactions with monthly/annual synchronization';
+const SWAGGER_TITLE = 'API Gerenciador Financeiro';
+const SWAGGER_DESCRIPTION = 'API completa para gerenciar orçamentos, categorias e transações financeiras com sincronização mensal/anual. Permite controlar receitas e despesas, comparar gastos planejados versus reais, e organizar finanças pessoais de forma estruturada.';
 const SWAGGER_PREFIX = '/docs';
 
 /**
