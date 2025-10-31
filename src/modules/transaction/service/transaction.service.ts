@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CategoryType, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../common';
-import { TransactionData, TransactionInput } from '../model';
+import { TransactionData, TransactionInput, TransactionAggregated } from '../model';
 
 @Injectable()
 export class TransactionService {
@@ -187,6 +187,58 @@ export class TransactionService {
             subcategoryId: parseInt(subcategoryId),
             total
         }));
+    }
+
+    /**
+     * Get aggregated transactions by year, grouped by subcategory, month, and type
+     *
+     * @param userId User ID
+     * @param year Year to filter transactions
+     * @returns Aggregated transaction data grouped by subcategory, month, year, and type
+     */
+    public async getAggregatedByYear(
+        userId: number,
+        year: number
+    ): Promise<TransactionAggregated[]> {
+
+        const startDate = new Date(year, 0, 1);
+        const endDate = new Date(year + 1, 0, 1);
+
+        const transactions = await this.prismaService.transaction.findMany({
+            where: {
+                userId,
+                date: {
+                    gte: startDate,
+                    lt: endDate
+                }
+            }
+        });
+
+        // Group by subcategoryId, month, year, and type
+        const aggregated = transactions.reduce((acc, transaction) => {
+            const date = new Date(transaction.date);
+            const month = date.getMonth() + 1; // 1-12
+            const year = date.getFullYear();
+            const key = `${transaction.subcategoryId}-${month}-${year}-${transaction.type}`;
+            
+            if (!acc[key]) {
+                acc[key] = {
+                    subcategoryId: transaction.subcategoryId,
+                    total: 0,
+                    count: 0,
+                    month,
+                    year,
+                    type: transaction.type
+                };
+            }
+            
+            acc[key].total += Number(transaction.amount);
+            acc[key].count += 1;
+            
+            return acc;
+        }, {} as Record<string, { subcategoryId: number; total: number; count: number; month: number; year: number; type: CategoryType }>);
+
+        return Object.values(aggregated).map(data => new TransactionAggregated(data));
     }
 
 }

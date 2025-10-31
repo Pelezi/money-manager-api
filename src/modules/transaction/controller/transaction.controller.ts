@@ -5,7 +5,7 @@ import { CategoryType } from '@prisma/client';
 
 import { RestrictedGuard } from '../../common';
 
-import { TransactionData, TransactionInput } from '../model';
+import { TransactionData, TransactionInput, TransactionAggregated } from '../model';
 import { TransactionService } from '../service';
 
 @Controller('transactions')
@@ -49,25 +49,22 @@ export class TransactionController {
 
     @Get('aggregated')
     @ApiOperation({ 
-        summary: 'Obter gastos agregados por subcategoria',
-        description: 'Retorna um resumo dos gastos/receitas totalizados por subcategoria em um período específico. Este endpoint é fundamental para análises financeiras, permitindo visualizar quanto você gastou ou recebeu em cada subcategoria. Por exemplo, você pode ver quanto gastou em "Supermercado", "Transporte", "Lazer" etc. em um mês específico. Os dados são agrupados por subcategoria e somados, facilitando a comparação com os orçamentos planejados e identificação de áreas onde você está gastando mais.'
+        summary: 'Obter transações agregadas por subcategoria, mês e tipo',
+        description: 'Retorna transações agregadas (somadas) agrupadas por subcategoria, mês, ano e tipo para um ano específico. Este endpoint é fundamental para análises financeiras detalhadas, permitindo visualizar quanto você gastou ou recebeu em cada subcategoria por mês. Por exemplo, você pode ver quanto gastou em "Supermercado" em cada mês de 2024. Os dados incluem o total gasto, a contagem de transações, e são separados por tipo (despesa ou receita).'
     })
-    @ApiQuery({ name: 'startDate', required: true, description: 'Data inicial do período (formato ISO: YYYY-MM-DD, obrigatório)' })
-    @ApiQuery({ name: 'endDate', required: true, description: 'Data final do período (formato ISO: YYYY-MM-DD, obrigatório)' })
-    @ApiResponse({ status: HttpStatus.OK, description: 'Retorna array de objetos com subcategoryId e total para cada subcategoria' })
-    @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Datas obrigatórias não fornecidas ou formato inválido' })
+    @ApiQuery({ name: 'year', required: true, description: 'Ano para agregar transações (formato: YYYY, obrigatório)' })
+    @ApiResponse({ status: HttpStatus.OK, isArray: true, type: TransactionAggregated, description: 'Retorna array de objetos com subcategoryId, total, count, month, year e type' })
+    @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Ano obrigatório não fornecido ou formato inválido' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
     public async getAggregated(
-        @Query('startDate') startDate: string,
-        @Query('endDate') endDate: string,
+        @Query('year') year: string,
         @Request() req: AuthenticatedRequest
-    ): Promise<{ subcategoryId: number; total: number }[]> {
+    ): Promise<TransactionAggregated[]> {
+        if (!year) {
+            throw new Error('Year parameter is required');
+        }
         const userId = req?.user?.userId || 1;
-        return this.transactionService.getAggregatedSpending(
-            userId,
-            new Date(startDate),
-            new Date(endDate)
-        );
+        return this.transactionService.getAggregatedByYear(userId, parseInt(year));
     }
 
     @Get(':id')
