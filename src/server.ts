@@ -57,6 +57,14 @@ async function bootstrap(): Promise<void> {
         new FastifyAdapter()
     );
 
+    // Enable CORS for frontend access
+    app.enableCors({
+        origin: process.env.CORS_ORIGIN || 'http://localhost:3005',
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+    });
+
     // @todo Enable Helmet for better API security headers
 
     app.setGlobalPrefix(process.env.API_PREFIX || API_DEFAULT_PREFIX);
