@@ -1,5 +1,5 @@
 import { AuthenticatedRequest } from "../../common";
-import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query, UseGuards, Request } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query, UseGuards, Request, BadRequestException } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { CategoryType } from '@prisma/client';
 
@@ -61,7 +61,7 @@ export class TransactionController {
         @Request() req: AuthenticatedRequest
     ): Promise<TransactionAggregated[]> {
         if (!year) {
-            throw new Error('Year parameter is required');
+            throw new BadRequestException('Year parameter is required');
         }
         const userId = req?.user?.userId || 1;
         return this.transactionService.getAggregatedByYear(userId, parseInt(year));

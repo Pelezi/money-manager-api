@@ -1,4 +1,4 @@
-import { Controller, Get, HttpStatus, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, HttpStatus, Query, UseGuards, Request, BadRequestException } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiQuery } from '@nestjs/swagger';
 
 import { AuthenticatedRequest, RestrictedGuard } from '../../common';
@@ -29,7 +29,7 @@ export class ExpenseController {
         @Request() req: AuthenticatedRequest
     ): Promise<BudgetData[]> {
         if (!year) {
-            throw new Error('Year parameter is required');
+            throw new BadRequestException('Year parameter is required');
         }
         const userId = req?.user?.userId || 1;
         return this.budgetService.findByUser(userId, parseInt(year));
