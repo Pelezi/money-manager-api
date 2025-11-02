@@ -1,14 +1,15 @@
 import { Controller, Get, Post, Query, Body, Res, HttpStatus } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { FastifyReply } from 'fastify';
-import { LoggerService } from '../../common/provider';
+
+import { WhatsappService } from '../service';
 
 @Controller('webhook')
 @ApiTags('whatsapp')
 export class WhatsappController {
 
     public constructor(
-        private readonly logger: LoggerService
+        private readonly whatsappService: WhatsappService
     ) { }
 
     @Get()
@@ -27,23 +28,20 @@ export class WhatsappController {
         @Query('hub.verify_token') token: string,
         @Res() res: FastifyReply
     ): void {
-        const WEBHOOK_VERIFY_TOKEN = process.env.WEBHOOK_VERIFY_TOKEN;
+        const isValid = this.whatsappService.verifyWebhook(mode, token);
 
-        if (!WEBHOOK_VERIFY_TOKEN) {
-            this.logger.error('WEBHOOK_VERIFY_TOKEN environment variable is not set');
-            res.status(HttpStatus.INTERNAL_SERVER_ERROR).send();
+        if (!isValid) {
+            if (!process.env.WEBHOOK_VERIFY_TOKEN) {
+                res.status(HttpStatus.INTERNAL_SERVER_ERROR).send();
+            } else {
+                res.status(HttpStatus.FORBIDDEN).send();
+            }
             return;
         }
 
-        if (mode === 'subscribe' && token === WEBHOOK_VERIFY_TOKEN) {
-            this.logger.info('WhatsApp webhook verified successfully');
-            // Per WhatsApp API requirements, we must echo back the challenge string exactly.
-            // Sending as text/plain prevents XSS. Challenge is only sent after token verification.
-            res.status(HttpStatus.OK).type('text/plain').send(challenge);
-        } else {
-            this.logger.error('WhatsApp webhook verification failed: invalid token or mode');
-            res.status(HttpStatus.FORBIDDEN).send();
-        }
+        // Per WhatsApp API requirements, we must echo back the challenge string exactly.
+        // Sending as text/plain prevents XSS. Challenge is only sent after token verification.
+        res.status(HttpStatus.OK).type('text/plain').send(challenge);
     }
 
     @Post()
@@ -56,7 +54,7 @@ export class WhatsappController {
         @Body() body: any,
         @Res() res: FastifyReply
     ): void {
-        this.logger.info('WhatsApp webhook received: ' + JSON.stringify(body));
+        this.whatsappService.processWebhookEvent(body);
         res.status(HttpStatus.OK).send('Webhook processed');
     }
 
