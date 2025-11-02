@@ -1,10 +1,15 @@
 import { Controller, Get, Post, Query, Body, Res, HttpStatus } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { FastifyReply } from 'fastify';
+import { LoggerService } from '../../common/provider';
 
 @Controller('webhook')
 @ApiTags('whatsapp')
 export class WhatsappController {
+
+    public constructor(
+        private readonly logger: LoggerService
+    ) { }
 
     @Get()
     @ApiOperation({ 
@@ -24,9 +29,17 @@ export class WhatsappController {
     ): void {
         const WEBHOOK_VERIFY_TOKEN = process.env.WEBHOOK_VERIFY_TOKEN;
 
-        if (mode && token === WEBHOOK_VERIFY_TOKEN) {
+        if (!WEBHOOK_VERIFY_TOKEN) {
+            this.logger.error('WEBHOOK_VERIFY_TOKEN environment variable is not set');
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).send();
+            return;
+        }
+
+        if (mode === 'subscribe' && token === WEBHOOK_VERIFY_TOKEN) {
+            this.logger.info('WhatsApp webhook verified successfully');
             res.status(HttpStatus.OK).send(challenge);
         } else {
+            this.logger.error('WhatsApp webhook verification failed: invalid token or mode');
             res.status(HttpStatus.FORBIDDEN).send();
         }
     }
@@ -41,7 +54,7 @@ export class WhatsappController {
         @Body() body: any,
         @Res() res: FastifyReply
     ): void {
-        console.log(JSON.stringify(body, null, 2));
+        this.logger.info('WhatsApp webhook received: ' + JSON.stringify(body));
         res.status(HttpStatus.OK).send('Webhook processed');
     }
 
