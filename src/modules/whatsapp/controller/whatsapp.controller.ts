@@ -37,7 +37,9 @@ export class WhatsappController {
 
         if (mode === 'subscribe' && token === WEBHOOK_VERIFY_TOKEN) {
             this.logger.info('WhatsApp webhook verified successfully');
-            res.status(HttpStatus.OK).send(challenge);
+            // Per WhatsApp API requirements, we must echo back the challenge string exactly.
+            // Sending as text/plain prevents XSS. Challenge is only sent after token verification.
+            res.status(HttpStatus.OK).type('text/plain').send(challenge);
         } else {
             this.logger.error('WhatsApp webhook verification failed: invalid token or mode');
             res.status(HttpStatus.FORBIDDEN).send();
