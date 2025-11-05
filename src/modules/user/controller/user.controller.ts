@@ -1,7 +1,8 @@
-import { Body, Controller, Get, HttpStatus, Post, UseGuards, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Post, Patch, UseGuards, UnauthorizedException, Request } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { RestrictedGuard } from '../../common';
+import { CategoryService } from '../../category/service';
 
 import { UserData, UserInput, LoginInput } from '../model';
 import { UserService } from '../service';
@@ -11,7 +12,8 @@ import { UserService } from '../service';
 export class UserController {
 
     public constructor(
-        private readonly userService: UserService
+        private readonly userService: UserService,
+        private readonly categoryService: CategoryService
     ) { }
 
     @Post('register')
@@ -51,6 +53,45 @@ export class UserController {
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
     public async find(): Promise<UserData[]> {
         return this.userService.find();
+    }
+
+    @Post('setup')
+    @UseGuards(RestrictedGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ 
+        summary: 'Completar configuração inicial do usuário',
+        description: 'Configura as categorias padrão do usuário e marca a primeira configuração como concluída. Recebe uma lista de categorias selecionadas com suas subcategorias e cria-as no banco de dados.'
+    })
+    @ApiResponse({ status: HttpStatus.OK, type: UserData, description: 'Configuração concluída com sucesso' })
+    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
+    public async completeSetup(
+        @Request() req: any,
+        @Body() body: { categories: Array<{ name: string; type: 'EXPENSE' | 'INCOME'; subcategories: string[] }> }
+    ): Promise<UserData> {
+        const userId = req.user.userId;
+        
+        // Create categories and subcategories
+        await this.categoryService.bulkCreateWithSubcategories(userId, body.categories);
+        
+        // Mark first access as complete
+        return this.userService.completeFirstAccess(userId);
+    }
+
+    @Patch('locale')
+    @UseGuards(RestrictedGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ 
+        summary: 'Atualizar preferência de idioma do usuário',
+        description: 'Atualiza o idioma preferido do usuário. Aceita valores como "en" para inglês ou "pt" para português.'
+    })
+    @ApiResponse({ status: HttpStatus.OK, type: UserData, description: 'Idioma atualizado com sucesso' })
+    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
+    public async updateLocale(
+        @Request() req: any,
+        @Body() body: { locale: string }
+    ): Promise<UserData> {
+        const userId = req.user.userId;
+        return this.userService.updateLocale(userId, body.locale);
     }
 
 }

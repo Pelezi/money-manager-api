@@ -7,6 +7,7 @@ import { SubcategoryModule } from './subcategory/subcategory.module';
 import { BudgetModule } from './budget/budget.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { ExpenseModule } from './expense/expense.module';
+import { WhatsappModule } from './whatsapp/whatsapp.module';
 
 @Module({
     imports: [
@@ -16,7 +17,8 @@ import { ExpenseModule } from './expense/expense.module';
         SubcategoryModule,
         BudgetModule,
         TransactionModule,
-        ExpenseModule
+        ExpenseModule,
+        WhatsappModule
     ]
 })
 export class ApplicationModule {}
