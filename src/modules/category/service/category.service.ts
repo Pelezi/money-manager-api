@@ -113,4 +113,39 @@ export class CategoryService {
         });
     }
 
+    /**
+     * Bulk create categories with subcategories
+     *
+     * @param userId User ID
+     * @param categories Array of categories with their subcategories
+     * @returns Created categories
+     */
+    public async bulkCreateWithSubcategories(
+        userId: number,
+        categories: Array<{ name: string; type: 'EXPENSE' | 'INCOME'; subcategories: string[] }>
+    ): Promise<CategoryData[]> {
+        const createdCategories: CategoryData[] = [];
+
+        for (const categoryData of categories) {
+            const category = await this.prismaService.category.create({
+                data: {
+                    userId,
+                    name: categoryData.name,
+                    type: categoryData.type,
+                    subcategories: {
+                        create: categoryData.subcategories.map(subName => ({
+                            userId,
+                            name: subName,
+                            type: categoryData.type
+                        }))
+                    }
+                }
+            });
+
+            createdCategories.push(new CategoryData(category));
+        }
+
+        return createdCategories;
+    }
+
 }

@@ -15,6 +15,12 @@ export class UserData {
     @ApiProperty({ description: 'Last name', example: 'Doe' })
     public readonly lastName: string;
 
+    @ApiProperty({ description: 'First access flag', example: true })
+    public readonly firstAccess: boolean;
+
+    @ApiProperty({ description: 'User locale preference', example: 'en' })
+    public readonly locale: string;
+
     @ApiProperty({ description: 'Created at', example: '2024-01-01T00:00:00Z' })
     public readonly createdAt: Date;
 
@@ -23,6 +29,8 @@ export class UserData {
         this.email = entity.email;
         this.firstName = entity.firstName;
         this.lastName = entity.lastName;
+        this.firstAccess = entity.firstAccess;
+        this.locale = entity.locale;
         this.createdAt = entity.createdAt;
     }
 

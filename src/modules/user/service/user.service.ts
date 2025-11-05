@@ -106,4 +106,35 @@ export class UserService {
         };
     }
 
+    /**
+     * Mark user's first access as complete
+     *
+     * @param userId User ID
+     * @returns Updated user data
+     */
+    public async completeFirstAccess(userId: number): Promise<UserData> {
+        const user = await this.prismaService.user.update({
+            where: { id: userId },
+            data: { firstAccess: false }
+        });
+
+        return new UserData(user);
+    }
+
+    /**
+     * Update user's locale preference
+     *
+     * @param userId User ID
+     * @param locale Locale code (e.g., 'en', 'pt')
+     * @returns Updated user data
+     */
+    public async updateLocale(userId: number, locale: string): Promise<UserData> {
+        const user = await this.prismaService.user.update({
+            where: { id: userId },
+            data: { locale }
+        });
+
+        return new UserData(user);
+    }
+
 }
