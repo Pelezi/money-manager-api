@@ -137,4 +137,27 @@ export class UserService {
         return new UserData(user);
     }
 
+    /**
+     * Search users by email
+     *
+     * @param email Email search term
+     * @returns List of users matching the search
+     */
+    public async searchByEmail(email: string): Promise<UserData[]> {
+        const users = await this.prismaService.user.findMany({
+            where: {
+                email: {
+                    contains: email,
+                    mode: 'insensitive'
+                }
+            },
+            take: 10,
+            orderBy: {
+                email: 'asc'
+            }
+        });
+
+        return users.map(user => new UserData(user));
+    }
+
 }

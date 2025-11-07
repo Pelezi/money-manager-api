@@ -22,4 +22,7 @@ export class TransactionInput {
 
     @ApiProperty({ description: 'Transaction type - EXPENSE (0) or INCOME (1)', enum: ['EXPENSE', 'INCOME'], example: 'EXPENSE', required: false })
     public readonly type?: CategoryType;
+
+    @ApiProperty({ description: 'Group ID', example: 1, required: false })
+    public readonly groupId?: number;
 }

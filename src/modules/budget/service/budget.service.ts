@@ -18,11 +18,20 @@ export class BudgetService {
      * @param year Optional year filter
      * @param type Optional budget category type filter (EXPENSE/INCOME)
      * @param month Optional month filter
+     * @param groupId Optional group filter
      * @returns A budget list
      */
-    public async findByUser(userId: number, year?: number, type?: CategoryType, month?: number): Promise<BudgetData[]> {
+    public async findByUser(userId: number, year?: number, type?: CategoryType, month?: number, groupId?: number): Promise<BudgetData[]> {
 
-        const where: Prisma.BudgetWhereInput = { userId };
+        const where: Prisma.BudgetWhereInput = {};
+
+        // If groupId is provided, filter by group (accessible to all group members)
+        // Otherwise, filter by userId (personal data)
+        if (groupId !== undefined) {
+            where.groupId = groupId;
+        } else {
+            where.userId = userId;
+        }
 
         if (year) {
             where.year = year;
@@ -89,7 +98,8 @@ export class BudgetService {
                         type: data.type,
                         month,
                         year: data.year,
-                        subcategoryId: data.subcategoryId
+                        subcategoryId: data.subcategoryId,
+                        groupId: data.groupId
                     }
                 });
                 budgets.push(budget);
@@ -107,7 +117,8 @@ export class BudgetService {
                 type: data.type,
                 month: data.month,
                 year: data.year,
-                subcategoryId: data.subcategoryId
+                subcategoryId: data.subcategoryId,
+                groupId: data.groupId
             }
         });
 
@@ -175,6 +186,7 @@ export class BudgetService {
      * @param month Optional month
      * @param subcategoryId Optional subcategory ID
      * @param type Optional category type filter (EXPENSE/INCOME)
+     * @param groupId Optional group filter
      * @returns Comparison data
      */
     public async getComparison(
@@ -182,13 +194,21 @@ export class BudgetService {
         year: number,
         month?: number,
         subcategoryId?: number,
-        type?: CategoryType
+        type?: CategoryType,
+        groupId?: number
     ): Promise<{ budgeted: number; actual: number; difference: number }> {
 
         const budgetWhere: Prisma.BudgetWhereInput = {
-            userId,
             year
         };
+
+        // If groupId is provided, filter by group (accessible to all group members)
+        // Otherwise, filter by userId (personal data)
+        if (groupId !== undefined) {
+            budgetWhere.groupId = groupId;
+        } else {
+            budgetWhere.userId = userId;
+        }
 
         if (month) {
             budgetWhere.month = month;
@@ -209,7 +229,6 @@ export class BudgetService {
         const budgeted = budgets.reduce((sum, budget) => sum + Number(budget.amount), 0);
 
         const transactionWhere: Prisma.TransactionWhereInput = {
-            userId,
             date: {
                 gte: new Date(year, month ? month - 1 : 0, 1),
                 lt: month
@@ -217,6 +236,14 @@ export class BudgetService {
                     : new Date(year + 1, 0, 1)
             }
         };
+
+        // If groupId is provided, filter by group (accessible to all group members)
+        // Otherwise, filter by userId (personal data)
+        if (groupId !== undefined) {
+            transactionWhere.groupId = groupId;
+        } else {
+            transactionWhere.userId = userId;
+        }
 
         if (subcategoryId) {
             transactionWhere.subcategoryId = subcategoryId;

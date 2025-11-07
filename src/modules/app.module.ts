@@ -8,6 +8,7 @@ import { BudgetModule } from './budget/budget.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { ExpenseModule } from './expense/expense.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
+import { GroupModule } from './group/group.module';
 
 @Module({
     imports: [
@@ -18,7 +19,8 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
         BudgetModule,
         TransactionModule,
         ExpenseModule,
-        WhatsappModule
+        WhatsappModule,
+        GroupModule
     ]
 })
 export class ApplicationModule {}

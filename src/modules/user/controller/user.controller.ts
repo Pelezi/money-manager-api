@@ -1,5 +1,5 @@
-import { Body, Controller, Get, HttpStatus, Post, Patch, UseGuards, UnauthorizedException, Request } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpStatus, Post, Patch, UseGuards, UnauthorizedException, Request, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiQuery } from '@nestjs/swagger';
 
 import { RestrictedGuard } from '../../common';
 import { CategoryService } from '../../category/service';
@@ -92,6 +92,20 @@ export class UserController {
     ): Promise<UserData> {
         const userId = req.user.userId;
         return this.userService.updateLocale(userId, body.locale);
+    }
+
+    @Get('search')
+    @UseGuards(RestrictedGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ 
+        summary: 'Pesquisar usuários por email',
+        description: 'Pesquisa usuários pelo email. Retorna até 10 usuários que correspondem ao termo de pesquisa. Útil para funcionalidade de autocomplete ao convidar membros para grupos.'
+    })
+    @ApiQuery({ name: 'email', required: true, description: 'Termo de pesquisa para o email do usuário' })
+    @ApiResponse({ status: HttpStatus.OK, isArray: true, type: UserData, description: 'Lista de usuários encontrados' })
+    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
+    public async searchUsers(@Query('email') email: string): Promise<UserData[]> {
+        return this.userService.searchByEmail(email);
     }
 
 }

@@ -22,4 +22,7 @@ export class BudgetInput {
 
     @ApiProperty({ description: 'If true, creates budgets for all 12 months of the year with amount distributed equally', example: false, required: false })
     public readonly annual?: boolean;
+
+    @ApiProperty({ description: 'Group ID', example: 1, required: false })
+    public readonly groupId?: number;
 }

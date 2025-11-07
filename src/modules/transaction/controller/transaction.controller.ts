@@ -23,6 +23,7 @@ export class TransactionController {
         summary: 'Listar todas as transações do usuário autenticado',
         description: 'Retorna todas as transações financeiras do usuário com múltiplas opções de filtragem. Transações representam os gastos e receitas reais que você registra no sistema. Cada transação está vinculada a uma subcategoria e possui valor, data, descrição e tipo (despesa ou receita). Use os filtros para analisar períodos específicos, subcategorias específicas ou tipos de transação. Este endpoint é essencial para visualizar seu histórico financeiro real e compará-lo com os orçamentos planejados.'
     })
+    @ApiQuery({ name: 'groupId', required: false, description: 'Filtrar por ID do grupo' })
     @ApiQuery({ name: 'subcategoryId', required: false, description: 'Filtrar por ID da subcategoria' })
     @ApiQuery({ name: 'startDate', required: false, description: 'Data inicial para filtro (formato ISO: YYYY-MM-DD)' })
     @ApiQuery({ name: 'endDate', required: false, description: 'Data final para filtro (formato ISO: YYYY-MM-DD)' })
@@ -31,6 +32,7 @@ export class TransactionController {
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Formato de data inválido' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
     public async find(
+        @Query('groupId') groupId?: string,
         @Query('subcategoryId') subcategoryId?: string,
         @Query('startDate') startDate?: string,
         @Query('endDate') endDate?: string,
@@ -40,6 +42,7 @@ export class TransactionController {
         const userId = req?.user?.userId || 1;
         return this.transactionService.findByUser(
             userId,
+            groupId ? parseInt(groupId) : undefined,
             subcategoryId ? parseInt(subcategoryId) : undefined,
             startDate ? new Date(startDate) : undefined,
             endDate ? new Date(endDate) : undefined,
@@ -53,18 +56,24 @@ export class TransactionController {
         description: 'Retorna transações agregadas (somadas) agrupadas por subcategoria, mês, ano e tipo para um ano específico. Este endpoint é fundamental para análises financeiras detalhadas, permitindo visualizar quanto você gastou ou recebeu em cada subcategoria por mês. Por exemplo, você pode ver quanto gastou em "Supermercado" em cada mês de 2024. Os dados incluem o total gasto, a contagem de transações, e são separados por tipo (despesa ou receita).'
     })
     @ApiQuery({ name: 'year', required: true, description: 'Ano para agregar transações (formato: YYYY, obrigatório)' })
+    @ApiQuery({ name: 'groupId', required: false, description: 'Filtrar por ID do grupo' })
     @ApiResponse({ status: HttpStatus.OK, isArray: true, type: TransactionAggregated, description: 'Retorna array de objetos com subcategoryId, total, count, month, year e type' })
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Ano obrigatório não fornecido ou formato inválido' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
     public async getAggregated(
         @Query('year') year: string,
-        @Request() req: AuthenticatedRequest
+        @Query('groupId') groupId?: string,
+        @Request() req?: AuthenticatedRequest
     ): Promise<TransactionAggregated[]> {
         if (!year) {
             throw new BadRequestException('Year parameter is required');
         }
         const userId = req?.user?.userId || 1;
-        return this.transactionService.getAggregatedByYear(userId, parseInt(year));
+        return this.transactionService.getAggregatedByYear(
+            userId, 
+            parseInt(year),
+            groupId ? parseInt(groupId) : undefined
+        );
     }
 
     @Get(':id')

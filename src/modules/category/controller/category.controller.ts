@@ -1,6 +1,6 @@
 import { AuthenticatedRequest } from "../../common";
-import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, UseGuards, Request } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiParam } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, UseGuards, Request, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiParam, ApiQuery } from '@nestjs/swagger';
 
 import { RestrictedGuard } from '../../common';
 
@@ -22,11 +22,15 @@ export class CategoryController {
         summary: 'Listar todas as categorias do usuário autenticado',
         description: 'Retorna todas as categorias criadas pelo usuário autenticado. As categorias são usadas para organizar subcategorias de despesas e receitas. Por exemplo, uma categoria "Moradia" pode conter subcategorias como "Aluguel", "Condomínio", "IPTU". Cada categoria pertence exclusivamente ao usuário que a criou, garantindo isolamento de dados entre usuários. As categorias incluem informação sobre o tipo (EXPENSE para despesas ou INCOME para receitas).'
     })
+    @ApiQuery({ name: 'groupId', required: false, description: 'Filtrar por ID do grupo' })
     @ApiResponse({ status: HttpStatus.OK, isArray: true, type: CategoryData, description: 'Lista de categorias retornada com sucesso' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
-    public async find(@Request() req: AuthenticatedRequest): Promise<CategoryData[]> {
+    public async find(
+        @Query('groupId') groupId?: string,
+        @Request() req?: AuthenticatedRequest
+    ): Promise<CategoryData[]> {
         const userId = req?.user?.userId || 1;
-        return this.categoryService.findByUser(userId);
+        return this.categoryService.findByUser(userId, groupId ? parseInt(groupId) : undefined);
     }
 
     @Get(':id')
