@@ -22,11 +22,12 @@ export class CategoryService {
         const where: any = {};
         
         // If groupId is provided, filter by group (accessible to all group members)
-        // Otherwise, filter by userId (personal data)
+        // Otherwise, filter by userId AND groupId null (personal data only)
         if (groupId !== undefined) {
             where.groupId = groupId;
         } else {
             where.userId = userId;
+            where.groupId = null;  // Ensure we only get personal categories, not group categories
         }
 
         const categories = await this.prismaService.category.findMany({

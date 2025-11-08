@@ -26,11 +26,12 @@ export class BudgetService {
         const where: Prisma.BudgetWhereInput = {};
 
         // If groupId is provided, filter by group (accessible to all group members)
-        // Otherwise, filter by userId (personal data)
+        // Otherwise, filter by userId AND groupId null (personal data only)
         if (groupId !== undefined) {
             where.groupId = groupId;
         } else {
             where.userId = userId;
+            where.groupId = null;  // Ensure we only get personal budgets, not group budgets
         }
 
         if (year) {
@@ -203,11 +204,12 @@ export class BudgetService {
         };
 
         // If groupId is provided, filter by group (accessible to all group members)
-        // Otherwise, filter by userId (personal data)
+        // Otherwise, filter by userId AND groupId null (personal data only)
         if (groupId !== undefined) {
             budgetWhere.groupId = groupId;
         } else {
             budgetWhere.userId = userId;
+            budgetWhere.groupId = null;  // Ensure we only get personal budgets, not group budgets
         }
 
         if (month) {
@@ -238,11 +240,12 @@ export class BudgetService {
         };
 
         // If groupId is provided, filter by group (accessible to all group members)
-        // Otherwise, filter by userId (personal data)
+        // Otherwise, filter by userId AND groupId null (personal data only)
         if (groupId !== undefined) {
             transactionWhere.groupId = groupId;
         } else {
             transactionWhere.userId = userId;
+            transactionWhere.groupId = null;  // Ensure we only get personal transactions, not group transactions
         }
 
         if (subcategoryId) {

@@ -175,9 +175,17 @@ export class TransactionService {
             throw new NotFoundException('Transaction not found');
         }
 
+        const updateData: any = { ...data };
+        
+        // Handle date and time combination
+        if (data.date) {
+            updateData.date = data.date + (data.time ? `T${data.time}Z` : 'T00:00:00Z');
+            delete updateData.time;
+        }
+
         const updated = await this.prismaService.transaction.update({
             where: { id },
-            data,
+            data: updateData,
             include: {
                 user: {
                     select: {
