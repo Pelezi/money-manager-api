@@ -98,14 +98,14 @@ export class UserController {
     @UseGuards(RestrictedGuard)
     @ApiBearerAuth()
     @ApiOperation({ 
-        summary: 'Pesquisar usuários por email',
-        description: 'Pesquisa usuários pelo email. Retorna até 10 usuários que correspondem ao termo de pesquisa. Útil para funcionalidade de autocomplete ao convidar membros para grupos.'
+        summary: 'Pesquisar usuários por email ou nome',
+        description: 'Pesquisa usuários pelo email ou nome. Retorna até 10 usuários que correspondem ao termo de pesquisa. Útil para funcionalidade de autocomplete ao convidar membros para grupos.'
     })
-    @ApiQuery({ name: 'email', required: true, description: 'Termo de pesquisa para o email do usuário' })
+    @ApiQuery({ name: 'query', required: true, description: 'Termo de pesquisa para o email ou nome do usuário' })
     @ApiResponse({ status: HttpStatus.OK, isArray: true, type: UserData, description: 'Lista de usuários encontrados' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
-    public async searchUsers(@Query('email') email: string): Promise<UserData[]> {
-        return this.userService.searchByEmail(email);
+    public async searchUsers(@Query('query') query: string): Promise<UserData[]> {
+        return this.userService.searchByEmailOrName(query);
     }
 
 }

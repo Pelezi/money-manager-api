@@ -1,27 +1,33 @@
 import { Module } from '@nestjs/common';
 
 import { CommonModule } from '../common';
+import { NotificationModule } from '../notification/notification.module';
 import { GroupController, GroupRoleController, GroupMemberController } from './controller';
-import { GroupService, GroupRoleService, GroupMemberService } from './service';
+import { GroupInvitationController } from './controller/group-invitation.controller';
+import { GroupService, GroupRoleService, GroupMemberService, GroupInvitationService } from './service';
 
 @Module({
     imports: [
         CommonModule,
+        NotificationModule
     ],
     providers: [
         GroupService,
         GroupRoleService,
-        GroupMemberService
+        GroupMemberService,
+        GroupInvitationService
     ],
     controllers: [
         GroupController,
         GroupRoleController,
-        GroupMemberController
+        GroupMemberController,
+        GroupInvitationController
     ],
     exports: [
         GroupService,
         GroupRoleService,
-        GroupMemberService
+        GroupMemberService,
+        GroupInvitationService
     ]
 })
 export class GroupModule { }

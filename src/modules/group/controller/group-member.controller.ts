@@ -4,7 +4,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiParam } from '@ne
 
 import { RestrictedGuard } from '../../common';
 
-import { GroupMemberData, AddGroupMemberInput, UpdateGroupMemberRoleInput } from '../model';
+import { GroupMemberData, AddGroupMemberInput, UpdateGroupMemberRoleInput, GroupInvitationData } from '../model';
 import { GroupMemberService } from '../service';
 
 @Controller('groups/:groupId/members')
@@ -34,12 +34,12 @@ export class GroupMemberController {
     @Post()
     @ApiParam({ name: 'groupId', description: 'Group ID' })
     @ApiOperation({
-        summary: 'Add a new member to the group',
-        description: 'Invites a user to join the group and assigns them a role. The user must exist in the system and cannot already be a member of the group. Requires the canManageGroup permission.'
+        summary: 'Invite a user to the group',
+        description: 'Sends an invitation to a user to join the group. The user will receive a notification and can accept or decline the invitation. Requires the canManageGroup permission.'
     })
-    @ApiResponse({ status: HttpStatus.CREATED, type: GroupMemberData, description: 'Member added successfully' })
+    @ApiResponse({ status: HttpStatus.CREATED, type: GroupInvitationData, description: 'Invitation sent successfully' })
     @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'User or role not found' })
-    @ApiResponse({ status: HttpStatus.CONFLICT, description: 'User is already a member of this group' })
+    @ApiResponse({ status: HttpStatus.CONFLICT, description: 'User is already a member or has a pending invitation' })
     @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'User does not have permission to manage members' })
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid data provided or role does not belong to this group' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'JWT token missing or invalid' })
@@ -47,7 +47,7 @@ export class GroupMemberController {
         @Param('groupId') groupId: string,
         @Body() input: AddGroupMemberInput,
         @Request() req: AuthenticatedRequest
-    ): Promise<GroupMemberData> {
+    ): Promise<GroupInvitationData> {
         const userId = req?.user?.userId || 1;
         return this.groupMemberService.addMember(parseInt(groupId), userId, input);
     }

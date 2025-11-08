@@ -1,14 +1,16 @@
 import { Injectable, NotFoundException, ForbiddenException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common';
-import { GroupMemberData, AddGroupMemberInput, UpdateGroupMemberRoleInput } from '../model';
+import { GroupMemberData, AddGroupMemberInput, UpdateGroupMemberRoleInput, GroupInvitationData } from '../model';
 import { GroupService } from './group.service';
+import { NotificationService } from '../../notification/service';
 
 @Injectable()
 export class GroupMemberService {
 
     public constructor(
         private readonly prismaService: PrismaService,
-        private readonly groupService: GroupService
+        private readonly groupService: GroupService,
+        private readonly notificationService: NotificationService
     ) { }
 
     /**
@@ -45,14 +47,14 @@ export class GroupMemberService {
     }
 
     /**
-     * Add a member to a group
+     * Invite a member to a group (creates an invitation)
      *
      * @param groupId Group ID
      * @param userId User ID (for permission check)
      * @param data Member details
-     * @returns A member created in the database
+     * @returns An invitation created in the database
      */
-    public async addMember(groupId: number, userId: number, data: AddGroupMemberInput): Promise<GroupMemberData> {
+    public async addMember(groupId: number, userId: number, data: AddGroupMemberInput): Promise<GroupInvitationData> {
         // Check if user has permission to manage the group
         const hasPermission = await this.groupService.checkManageGroupPermission(groupId, userId);
         if (!hasPermission) {
@@ -80,6 +82,19 @@ export class GroupMemberService {
             throw new ConflictException('User is already a member of this group');
         }
 
+        // Check if there's already a pending invitation
+        const existingInvitation = await this.prismaService.groupInvitation.findFirst({
+            where: {
+                groupId,
+                userId: data.userId,
+                status: 'PENDING'
+            }
+        });
+
+        if (existingInvitation) {
+            throw new ConflictException('User already has a pending invitation to this group');
+        }
+
         // Check if role exists and belongs to the group
         const role = await this.prismaService.groupRole.findFirst({
             where: {
@@ -92,17 +107,23 @@ export class GroupMemberService {
             throw new BadRequestException('Role not found or does not belong to this group');
         }
 
-        const member = await this.prismaService.groupMember.create({
+        const group = await this.prismaService.group.findUnique({
+            where: { id: groupId }
+        });
+
+        // Create invitation
+        const invitation = await this.prismaService.groupInvitation.create({
             data: {
                 groupId,
                 userId: data.userId,
+                invitedBy: userId,
                 roleId: data.roleId
             },
             include: {
-                user: {
+                group: true,
+                inviter: {
                     select: {
                         id: true,
-                        email: true,
                         firstName: true,
                         lastName: true
                     }
@@ -111,7 +132,21 @@ export class GroupMemberService {
             }
         });
 
-        return new GroupMemberData(member);
+        // Get current user info
+        const inviter = await this.prismaService.user.findUnique({
+            where: { id: userId }
+        });
+
+        // Create notification for the invited user
+        await this.notificationService.create(
+            data.userId,
+            'GROUP_INVITATION',
+            'Group Invitation',
+            `${inviter?.firstName} ${inviter?.lastName} has invited you to join ${group?.name}`,
+            { groupId, invitationId: invitation.id }
+        );
+
+        return new GroupInvitationData(invitation);
     }
 
     /**
@@ -217,9 +252,28 @@ export class GroupMemberService {
             throw new ForbiddenException('Cannot remove the group owner from the group');
         }
 
+        const removedUser = await this.prismaService.user.findUnique({
+            where: { id: member.userId }
+        });
+
         await this.prismaService.groupMember.delete({
             where: { id: memberId }
         });
+
+        // Notify other group members
+        const members = await this.prismaService.groupMember.findMany({
+            where: { groupId }
+        });
+
+        for (const m of members) {
+            await this.notificationService.create(
+                m.userId,
+                'GROUP_MEMBER_LEFT',
+                'Member Removed',
+                `${removedUser?.firstName} ${removedUser?.lastName} was removed from ${group?.name}`,
+                { groupId }
+            );
+        }
     }
 
     /**
@@ -249,9 +303,28 @@ export class GroupMemberService {
             throw new ForbiddenException('Group owner cannot leave the group. Transfer ownership or delete the group instead.');
         }
 
+        const user = await this.prismaService.user.findUnique({
+            where: { id: userId }
+        });
+
         await this.prismaService.groupMember.delete({
             where: { id: member.id }
         });
+
+        // Notify other group members
+        const members = await this.prismaService.groupMember.findMany({
+            where: { groupId }
+        });
+
+        for (const m of members) {
+            await this.notificationService.create(
+                m.userId,
+                'GROUP_MEMBER_LEFT',
+                'Member Left',
+                `${user?.firstName} ${user?.lastName} has left ${group?.name}`,
+                { groupId }
+            );
+        }
     }
 
 }

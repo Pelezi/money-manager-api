@@ -91,8 +91,8 @@ export class UserService {
         }
 
         const token = jwt.sign(
-            { 
-                userId: user.id, 
+            {
+                userId: user.id,
                 email: user.email,
                 role: Role.RESTRICTED
             },
@@ -143,13 +143,23 @@ export class UserService {
      * @param email Email search term
      * @returns List of users matching the search
      */
-    public async searchByEmail(email: string): Promise<UserData[]> {
+    public async searchByEmailOrName(query: string): Promise<UserData[]> {
         const users = await this.prismaService.user.findMany({
             where: {
-                email: {
-                    contains: email,
-                    mode: 'insensitive'
-                }
+                OR: [
+                    {
+                        email: {
+                            contains: query,
+                            mode: 'insensitive'
+                        }
+                    },
+                    {
+                        firstName: {
+                            contains: query,
+                            mode: 'insensitive'
+                        }
+                    }
+                ]
             },
             take: 10,
             orderBy: {

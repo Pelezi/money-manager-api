@@ -34,11 +34,12 @@ export class TransactionService {
         const where: Prisma.TransactionWhereInput = {};
 
         // If groupId is provided, filter by group (accessible to all group members)
-        // Otherwise, filter by userId (personal data)
+        // Otherwise, filter by userId (personal data) and ensure groupId is null
         if (groupId !== undefined) {
             where.groupId = groupId;
         } else {
             where.userId = userId;
+            where.groupId = null;
         }
 
         if (subcategoryId) {
@@ -93,7 +94,21 @@ export class TransactionService {
     public async findById(id: number, userId: number): Promise<TransactionData | null> {
 
         const transaction = await this.prismaService.transaction.findFirst({
-            where: { id, userId }
+            where: { id, userId },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true
+                    }
+                },
+                subcategory: {
+                    include: {
+                        category: true
+                    }
+                }
+            }
         });
 
         if (!transaction) {
@@ -162,7 +177,21 @@ export class TransactionService {
 
         const updated = await this.prismaService.transaction.update({
             where: { id },
-            data
+            data,
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true
+                    }
+                },
+                subcategory: {
+                    include: {
+                        category: true
+                    }
+                }
+            }
         });
 
         return new TransactionData(updated);
@@ -206,6 +235,7 @@ export class TransactionService {
         const transactions = await this.prismaService.transaction.findMany({
             where: {
                 userId,
+                groupId: null,
                 date: {
                     gte: startDate,
                     lte: endDate
@@ -253,11 +283,12 @@ export class TransactionService {
         };
 
         // If groupId is provided, filter by group (accessible to all group members)
-        // Otherwise, filter by userId (personal data)
+        // Otherwise, filter by userId (personal data) and ensure groupId is null
         if (groupId !== undefined) {
             where.groupId = groupId;
         } else {
             where.userId = userId;
+            where.groupId = null;
         }
 
         const transactions = await this.prismaService.transaction.findMany({

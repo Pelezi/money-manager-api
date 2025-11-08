@@ -38,6 +38,17 @@ export class TransactionData {
         lastName: string;
     };
 
+    @ApiProperty({ description: 'Subcategory with category information', required: false })
+    public readonly subcategory?: {
+        id: number;
+        name: string;
+        category: {
+            id: number;
+            name: string;
+            type: CategoryType;
+        };
+    };
+
     public constructor(entity: any) {
         this.id = entity.id;
         this.userId = entity.userId;
@@ -55,6 +66,19 @@ export class TransactionData {
                 id: entity.user.id,
                 firstName: entity.user.firstName,
                 lastName: entity.user.lastName
+            };
+        }
+
+        // Include subcategory and category data if available
+        if (entity.subcategory) {
+            this.subcategory = {
+                id: entity.subcategory.id,
+                name: entity.subcategory.name,
+                category: {
+                    id: entity.subcategory.category.id,
+                    name: entity.subcategory.category.name,
+                    type: entity.subcategory.category.type
+                }
             };
         }
     }

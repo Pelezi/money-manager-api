@@ -9,6 +9,7 @@ import { TransactionModule } from './transaction/transaction.module';
 import { ExpenseModule } from './expense/expense.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { GroupModule } from './group/group.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
     imports: [
@@ -20,7 +21,8 @@ import { GroupModule } from './group/group.module';
         TransactionModule,
         ExpenseModule,
         WhatsappModule,
-        GroupModule
+        GroupModule,
+        NotificationModule
     ]
 })
 export class ApplicationModule {}
