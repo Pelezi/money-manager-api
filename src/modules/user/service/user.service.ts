@@ -138,6 +138,25 @@ export class UserService {
     }
 
     /**
+     * Update user's profile (timezone and locale)
+     *
+     * @param userId User ID
+     * @param data Profile data to update
+     * @returns Updated user data
+     */
+    public async updateProfile(userId: number, data: { timezone?: string; locale?: string }): Promise<UserData> {
+        const user = await this.prismaService.user.update({
+            where: { id: userId },
+            data: {
+                ...(data.timezone && { timezone: data.timezone }),
+                ...(data.locale && { locale: data.locale })
+            }
+        });
+
+        return new UserData(user);
+    }
+
+    /**
      * Search users by email
      *
      * @param email Email search term

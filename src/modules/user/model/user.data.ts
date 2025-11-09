@@ -21,6 +21,9 @@ export class UserData {
     @ApiProperty({ description: 'User locale preference', example: 'en' })
     public readonly locale: string;
 
+    @ApiProperty({ description: 'User timezone', example: 'America/Sao_Paulo' })
+    public readonly timezone: string;
+
     @ApiProperty({ description: 'Created at', example: '2024-01-01T00:00:00Z' })
     public readonly createdAt: Date;
 
@@ -31,6 +34,7 @@ export class UserData {
         this.lastName = entity.lastName;
         this.firstAccess = entity.firstAccess;
         this.locale = entity.locale;
+        this.timezone = entity.timezone;
         this.createdAt = entity.createdAt;
     }
 

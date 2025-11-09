@@ -15,6 +15,7 @@ model User {
   lastName    String
   firstAccess Boolean  @default(true)
   locale      String   @default("en")
+  timezone    String   @default("UTC")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

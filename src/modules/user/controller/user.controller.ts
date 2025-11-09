@@ -94,6 +94,23 @@ export class UserController {
         return this.userService.updateLocale(userId, body.locale);
     }
 
+    @Patch('profile')
+    @UseGuards(RestrictedGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ 
+        summary: 'Atualizar perfil do usuário',
+        description: 'Atualiza as informações do perfil do usuário, incluindo timezone e locale.'
+    })
+    @ApiResponse({ status: HttpStatus.OK, type: UserData, description: 'Perfil atualizado com sucesso' })
+    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
+    public async updateProfile(
+        @Request() req: any,
+        @Body() body: { timezone?: string; locale?: string }
+    ): Promise<UserData> {
+        const userId = req.user.userId;
+        return this.userService.updateProfile(userId, body);
+    }
+
     @Get('search')
     @UseGuards(RestrictedGuard)
     @ApiBearerAuth()
