@@ -121,7 +121,7 @@ export class TransactionService {
     /**
      * Create a new transaction
      *
-     * @param userId User ID
+     * @param userId User ID (defaults to authenticated user, can be overridden for group transactions)
      * @param data Transaction details
      * @returns A transaction created in the database
      */
@@ -129,7 +129,7 @@ export class TransactionService {
 
         const transaction = await this.prismaService.transaction.create({
             data: {
-                userId,
+                userId: data.userId || userId, // Use provided userId for group transactions, otherwise use authenticated user
                 groupId: data.groupId,
                 subcategoryId: data.subcategoryId,
                 title: data.title,

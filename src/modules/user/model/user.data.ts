@@ -15,6 +15,9 @@ export class UserData {
     @ApiProperty({ description: 'Last name', example: 'Doe' })
     public readonly lastName: string;
 
+    @ApiProperty({ description: 'Phone number', example: '+55 11 98765-4321', required: false })
+    public readonly phoneNumber?: string;
+
     @ApiProperty({ description: 'First access flag', example: true })
     public readonly firstAccess: boolean;
 
@@ -32,6 +35,7 @@ export class UserData {
         this.email = entity.email;
         this.firstName = entity.firstName;
         this.lastName = entity.lastName;
+        this.phoneNumber = entity.phoneNumber || undefined;
         this.firstAccess = entity.firstAccess;
         this.locale = entity.locale;
         this.timezone = entity.timezone;

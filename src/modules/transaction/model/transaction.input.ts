@@ -25,4 +25,7 @@ export class TransactionInput {
 
     @ApiProperty({ description: 'Group ID', example: 1, required: false })
     public readonly groupId?: number;
+
+    @ApiProperty({ description: 'User ID - Only for group transactions to specify which member made the transaction', example: 1, required: false })
+    public readonly userId?: number;
 }
