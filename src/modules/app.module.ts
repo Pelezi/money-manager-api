@@ -10,6 +10,7 @@ import { ExpenseModule } from './expense/expense.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { GroupModule } from './group/group.module';
 import { NotificationModule } from './notification/notification.module';
+import { AccountModule } from './account/account.module';
 
 @Module({
     imports: [
@@ -22,7 +23,8 @@ import { NotificationModule } from './notification/notification.module';
         ExpenseModule,
         WhatsappModule,
         GroupModule,
-        NotificationModule
+        NotificationModule,
+        AccountModule
     ]
 })
 export class ApplicationModule {}

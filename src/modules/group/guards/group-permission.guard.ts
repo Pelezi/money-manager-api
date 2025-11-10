@@ -8,13 +8,17 @@ export const RequirePermission = (permission: keyof GroupPermissions) => SetMeta
 
 export interface GroupPermissions {
     canViewTransactions: boolean;
-    canManageTransactions: boolean;
+    canManageOwnTransactions: boolean;
+    canManageGroupTransactions: boolean;
     canViewCategories: boolean;
     canManageCategories: boolean;
     canViewSubcategories: boolean;
     canManageSubcategories: boolean;
     canViewBudgets: boolean;
     canManageBudgets: boolean;
+    canViewAccounts: boolean;
+    canManageOwnAccounts: boolean;
+    canManageGroupAccounts: boolean;
     canManageGroup: boolean;
 }
 

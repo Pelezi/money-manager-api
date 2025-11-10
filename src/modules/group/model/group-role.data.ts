@@ -18,8 +18,11 @@ export class GroupRoleData {
     @ApiProperty({ description: 'Can view transactions', example: true })
     public readonly canViewTransactions: boolean;
 
-    @ApiProperty({ description: 'Can manage transactions', example: false })
-    public readonly canManageTransactions: boolean;
+    @ApiProperty({ description: 'Can manage own transactions', example: false })
+    public readonly canManageOwnTransactions: boolean;
+
+    @ApiProperty({ description: 'Can manage all group transactions', example: false })
+    public readonly canManageGroupTransactions: boolean;
 
     @ApiProperty({ description: 'Can view categories', example: true })
     public readonly canViewCategories: boolean;
@@ -39,6 +42,15 @@ export class GroupRoleData {
     @ApiProperty({ description: 'Can manage budgets', example: false })
     public readonly canManageBudgets: boolean;
 
+    @ApiProperty({ description: 'Can view accounts', example: true })
+    public readonly canViewAccounts: boolean;
+
+    @ApiProperty({ description: 'Can manage own accounts', example: false })
+    public readonly canManageOwnAccounts: boolean;
+
+    @ApiProperty({ description: 'Can manage all group accounts', example: false })
+    public readonly canManageGroupAccounts: boolean;
+
     @ApiProperty({ description: 'Can manage group (members, roles, settings)', example: false })
     public readonly canManageGroup: boolean;
 
@@ -54,13 +66,17 @@ export class GroupRoleData {
         this.name = entity.name;
         this.description = entity.description || undefined;
         this.canViewTransactions = entity.canViewTransactions;
-        this.canManageTransactions = entity.canManageTransactions;
+        this.canManageOwnTransactions = entity.canManageOwnTransactions;
+        this.canManageGroupTransactions = entity.canManageGroupTransactions;
         this.canViewCategories = entity.canViewCategories;
         this.canManageCategories = entity.canManageCategories;
         this.canViewSubcategories = entity.canViewSubcategories;
         this.canManageSubcategories = entity.canManageSubcategories;
         this.canViewBudgets = entity.canViewBudgets;
         this.canManageBudgets = entity.canManageBudgets;
+        this.canViewAccounts = entity.canViewAccounts;
+        this.canManageOwnAccounts = entity.canManageOwnAccounts;
+        this.canManageGroupAccounts = entity.canManageGroupAccounts;
         this.canManageGroup = entity.canManageGroup;
         this.createdAt = entity.createdAt;
         this.updatedAt = entity.updatedAt;

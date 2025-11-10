@@ -10,8 +10,11 @@ export class GroupRoleInput {
     @ApiProperty({ description: 'Can view transactions', example: true, default: true })
     public readonly canViewTransactions?: boolean;
 
-    @ApiProperty({ description: 'Can manage transactions', example: false, default: false })
-    public readonly canManageTransactions?: boolean;
+    @ApiProperty({ description: 'Can manage own transactions', example: false, default: false })
+    public readonly canManageOwnTransactions?: boolean;
+
+    @ApiProperty({ description: 'Can manage all group transactions', example: false, default: false })
+    public readonly canManageGroupTransactions?: boolean;
 
     @ApiProperty({ description: 'Can view categories', example: true, default: true })
     public readonly canViewCategories?: boolean;
@@ -31,6 +34,15 @@ export class GroupRoleInput {
     @ApiProperty({ description: 'Can manage budgets', example: false, default: false })
     public readonly canManageBudgets?: boolean;
 
+    @ApiProperty({ description: 'Can view accounts', example: true, default: true })
+    public readonly canViewAccounts?: boolean;
+
+    @ApiProperty({ description: 'Can manage own accounts', example: false, default: false })
+    public readonly canManageOwnAccounts?: boolean;
+
+    @ApiProperty({ description: 'Can manage all group accounts', example: false, default: false })
+    public readonly canManageGroupAccounts?: boolean;
+
     @ApiProperty({ description: 'Can manage group (members, roles, settings)', example: false, default: false })
     public readonly canManageGroup?: boolean;
 }
@@ -45,8 +57,11 @@ export class UpdateGroupRoleInput {
     @ApiProperty({ description: 'Can view transactions', example: true, required: false })
     public readonly canViewTransactions?: boolean;
 
-    @ApiProperty({ description: 'Can manage transactions', example: false, required: false })
-    public readonly canManageTransactions?: boolean;
+    @ApiProperty({ description: 'Can manage own transactions', example: false, required: false })
+    public readonly canManageOwnTransactions?: boolean;
+
+    @ApiProperty({ description: 'Can manage all group transactions', example: false, required: false })
+    public readonly canManageGroupTransactions?: boolean;
 
     @ApiProperty({ description: 'Can view categories', example: true, required: false })
     public readonly canViewCategories?: boolean;
@@ -65,6 +80,15 @@ export class UpdateGroupRoleInput {
 
     @ApiProperty({ description: 'Can manage budgets', example: false, required: false })
     public readonly canManageBudgets?: boolean;
+
+    @ApiProperty({ description: 'Can view accounts', example: true, required: false })
+    public readonly canViewAccounts?: boolean;
+
+    @ApiProperty({ description: 'Can manage own accounts', example: false, required: false })
+    public readonly canManageOwnAccounts?: boolean;
+
+    @ApiProperty({ description: 'Can manage all group accounts', example: false, required: false })
+    public readonly canManageGroupAccounts?: boolean;
 
     @ApiProperty({ description: 'Can manage group (members, roles, settings)', example: false, required: false })
     public readonly canManageGroup?: boolean;

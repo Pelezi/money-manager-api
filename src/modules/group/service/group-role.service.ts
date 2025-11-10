@@ -91,13 +91,17 @@ export class GroupRoleService {
                 name: data.name,
                 description: data.description,
                 canViewTransactions: data.canViewTransactions ?? true,
-                canManageTransactions: data.canManageTransactions ?? false,
+                canManageOwnTransactions: data.canManageOwnTransactions ?? false,
+                canManageGroupTransactions: data.canManageGroupTransactions ?? false,
                 canViewCategories: data.canViewCategories ?? true,
                 canManageCategories: data.canManageCategories ?? false,
                 canViewSubcategories: data.canViewSubcategories ?? true,
                 canManageSubcategories: data.canManageSubcategories ?? false,
                 canViewBudgets: data.canViewBudgets ?? true,
                 canManageBudgets: data.canManageBudgets ?? false,
+                canViewAccounts: data.canViewAccounts ?? true,
+                canManageOwnAccounts: data.canManageOwnAccounts ?? false,
+                canManageGroupAccounts: data.canManageGroupAccounts ?? false,
                 canManageGroup: data.canManageGroup ?? false
             }
         });

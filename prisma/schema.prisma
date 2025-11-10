@@ -29,6 +29,7 @@ model User {
   receivedInvitations GroupInvitation[] @relation("UserInvitations")
   sentInvitations   GroupInvitation[]  @relation("SentInvitations")
   notifications     Notification[]
+  accounts            Account[]
 }
 
 model Category {
@@ -140,6 +141,7 @@ model Group {
   subcategories Subcategory[]
   transactions  Transaction[]
   invitations   GroupInvitation[]
+  accounts      Account[]
 
   @@index([ownerId])
 }
@@ -151,15 +153,19 @@ model GroupRole {
   description String?
   
   // Permission flags
-  canViewTransactions    Boolean @default(true)
-  canManageTransactions  Boolean @default(false)
-  canViewCategories      Boolean @default(true)
-  canManageCategories    Boolean @default(false)
-  canViewSubcategories   Boolean @default(true)
-  canManageSubcategories Boolean @default(false)
-  canViewBudgets         Boolean @default(true)
-  canManageBudgets       Boolean @default(false)
-  canManageGroup         Boolean @default(false) // Manage members, roles, and group settings
+  canViewTransactions       Boolean @default(true)
+  canManageOwnTransactions  Boolean @default(false)  // Manage only own transactions
+  canManageGroupTransactions Boolean @default(false) // Manage all group transactions
+  canViewCategories         Boolean @default(true)
+  canManageCategories       Boolean @default(false)
+  canViewSubcategories      Boolean @default(true)
+  canManageSubcategories    Boolean @default(false)
+  canViewBudgets            Boolean @default(true)
+  canManageBudgets          Boolean @default(false)
+  canViewAccounts           Boolean @default(true)
+  canManageOwnAccounts      Boolean @default(false)  // Manage only own accounts
+  canManageGroupAccounts    Boolean @default(false)  // Manage all group accounts
+  canManageGroup            Boolean @default(false)  // Manage members, roles, and group settings
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -251,4 +257,41 @@ enum NotificationType {
   BUDGET_UPDATED
   BUDGET_DELETED
   GROUP_UPDATED
+}
+
+model Account {
+  id          Int         @id @default(autoincrement())
+  userId      Int
+  groupId     Int?
+  name        String
+  type        AccountType
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group    Group?           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  balances AccountBalance[]
+
+  @@index([userId])
+  @@index([groupId])
+  @@index([type])
+}
+
+enum AccountType {
+  CREDIT
+  CASH
+  PREPAID
+}
+
+model AccountBalance {
+  id        Int      @id @default(autoincrement())
+  accountId Int
+  amount    Decimal  @db.Decimal(10, 2)
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@index([date])
 }
