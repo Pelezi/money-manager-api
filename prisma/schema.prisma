@@ -102,7 +102,7 @@ model Transaction {
   groupId       Int?
   subcategoryId Int
   accountId     Int?
-  title         String
+  title         String?
   amount        Decimal      @db.Decimal(10, 2)
   description   String?
   date          DateTime

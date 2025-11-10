@@ -24,6 +24,7 @@ export class TransactionController {
         description: 'Retorna todas as transações financeiras do usuário com múltiplas opções de filtragem. Transações representam os gastos e rendas reais que você registra no sistema. Cada transação está vinculada a uma subcategoria e possui valor, data, descrição e tipo (despesa ou renda). Use os filtros para analisar períodos específicos, subcategorias específicas ou tipos de transação. Este endpoint é essencial para visualizar seu histórico financeiro real e compará-lo com os orçamentos planejados.'
     })
     @ApiQuery({ name: 'groupId', required: false, description: 'Filtrar por ID do grupo' })
+    @ApiQuery({ name: 'categoryId', required: false, description: 'Filtrar por ID da categoria' })
     @ApiQuery({ name: 'subcategoryId', required: false, description: 'Filtrar por ID da subcategoria' })
     @ApiQuery({ name: 'accountId', required: false, description: 'Filtrar por ID da conta' })
     @ApiQuery({ name: 'startDate', required: false, description: 'Data inicial para filtro (formato ISO: YYYY-MM-DD)' })
@@ -34,6 +35,7 @@ export class TransactionController {
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
     public async find(
         @Query('groupId') groupId?: string,
+        @Query('categoryId') categoryId?: string,
         @Query('subcategoryId') subcategoryId?: string,
         @Query('accountId') accountId?: string,
         @Query('startDate') startDate?: string,
@@ -45,6 +47,7 @@ export class TransactionController {
         return this.transactionService.findByUser(
             userId,
             groupId ? parseInt(groupId) : undefined,
+            categoryId ? parseInt(categoryId) : undefined,
             subcategoryId ? parseInt(subcategoryId) : undefined,
             accountId ? parseInt(accountId) : undefined,
             startDate ? new Date(startDate) : undefined,

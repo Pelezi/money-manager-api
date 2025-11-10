@@ -16,6 +16,8 @@ export class TransactionService {
      *
      * @param userId User ID
      * @param groupId Optional group filter
+     * @param accountId Optional account filter
+     * @param categoryId Optional category filter
      * @param subcategoryId Optional subcategory filter
      * @param startDate Optional start date filter
      * @param endDate Optional end date filter
@@ -25,22 +27,34 @@ export class TransactionService {
     public async findByUser(
         userId: number,
         groupId?: number,
+        categoryId?: number,
         subcategoryId?: number,
         accountId?: number,
         startDate?: Date,
         endDate?: Date,
         type?: CategoryType
     ): Promise<TransactionData[]> {
+        
 
         const where: Prisma.TransactionWhereInput = {};
 
-        // If groupId is provided, filter by group (accessible to all group members)
-        // Otherwise, filter by userId (personal data) and ensure groupId is null
         if (groupId !== undefined) {
             where.groupId = groupId;
         } else {
             where.userId = userId;
             where.groupId = null;
+        }
+
+        if (categoryId) {
+            const subcategories = await this.prismaService.subcategory.findMany({
+                where: { categoryId }
+            });
+            const subcategoryIds = subcategories.map(s => s.id);
+            if (subcategoryIds.length > 0) {
+                where.subcategoryId = { in: subcategoryIds };
+            } else {
+                return [];
+            }
         }
 
         if (subcategoryId) {
