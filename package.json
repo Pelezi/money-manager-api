@@ -9,9 +9,9 @@
     "node": ">=20.0.0 <26.0.0"
   },
   "scripts": {
-    "clean": "rimraf ./dist",
-    "start": "node dist/server.js",
-    "dev": "env-cmd -f .env nodemon",
+  "clean": "rimraf ./dist",
+  "start": "env-cmd -f .env.production node dist/server.js",
+  "dev": "env-cmd -f .env.development nodemon",
     "build": "npm run clean && tsc",
     "test": "env-cmd -f .env jest --config=jest.json",
     "lint": "eslint -c .eslintrc.js --ext .ts 'src/**/*.ts'"

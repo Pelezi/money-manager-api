@@ -21,19 +21,21 @@ export class TransactionController {
     @Get()
     @ApiOperation({ 
         summary: 'Listar todas as transações do usuário autenticado',
-        description: 'Retorna todas as transações financeiras do usuário com múltiplas opções de filtragem. Transações representam os gastos e receitas reais que você registra no sistema. Cada transação está vinculada a uma subcategoria e possui valor, data, descrição e tipo (despesa ou receita). Use os filtros para analisar períodos específicos, subcategorias específicas ou tipos de transação. Este endpoint é essencial para visualizar seu histórico financeiro real e compará-lo com os orçamentos planejados.'
+        description: 'Retorna todas as transações financeiras do usuário com múltiplas opções de filtragem. Transações representam os gastos e rendas reais que você registra no sistema. Cada transação está vinculada a uma subcategoria e possui valor, data, descrição e tipo (despesa ou renda). Use os filtros para analisar períodos específicos, subcategorias específicas ou tipos de transação. Este endpoint é essencial para visualizar seu histórico financeiro real e compará-lo com os orçamentos planejados.'
     })
     @ApiQuery({ name: 'groupId', required: false, description: 'Filtrar por ID do grupo' })
     @ApiQuery({ name: 'subcategoryId', required: false, description: 'Filtrar por ID da subcategoria' })
+    @ApiQuery({ name: 'accountId', required: false, description: 'Filtrar por ID da conta' })
     @ApiQuery({ name: 'startDate', required: false, description: 'Data inicial para filtro (formato ISO: YYYY-MM-DD)' })
     @ApiQuery({ name: 'endDate', required: false, description: 'Data final para filtro (formato ISO: YYYY-MM-DD)' })
-    @ApiQuery({ name: 'type', required: false, enum: ['EXPENSE', 'INCOME'], description: 'Filtrar por tipo (EXPENSE=Despesas, INCOME=Receitas)' })
+    @ApiQuery({ name: 'type', required: false, enum: ['EXPENSE', 'INCOME'], description: 'Filtrar por tipo (EXPENSE=Despesas, INCOME=Rendas)' })
     @ApiResponse({ status: HttpStatus.OK, isArray: true, type: TransactionData, description: 'Lista de transações retornada com sucesso' })
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Formato de data inválido' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
     public async find(
         @Query('groupId') groupId?: string,
         @Query('subcategoryId') subcategoryId?: string,
+        @Query('accountId') accountId?: string,
         @Query('startDate') startDate?: string,
         @Query('endDate') endDate?: string,
         @Query('type') type?: CategoryType,
@@ -44,6 +46,7 @@ export class TransactionController {
             userId,
             groupId ? parseInt(groupId) : undefined,
             subcategoryId ? parseInt(subcategoryId) : undefined,
+            accountId ? parseInt(accountId) : undefined,
             startDate ? new Date(startDate) : undefined,
             endDate ? new Date(endDate) : undefined,
             type
@@ -53,7 +56,7 @@ export class TransactionController {
     @Get('aggregated')
     @ApiOperation({ 
         summary: 'Obter transações agregadas por subcategoria, mês e tipo',
-        description: 'Retorna transações agregadas (somadas) agrupadas por subcategoria, mês, ano e tipo para um ano específico. Este endpoint é fundamental para análises financeiras detalhadas, permitindo visualizar quanto você gastou ou recebeu em cada subcategoria por mês. Por exemplo, você pode ver quanto gastou em "Supermercado" em cada mês de 2024. Os dados incluem o total gasto, a contagem de transações, e são separados por tipo (despesa ou receita).'
+        description: 'Retorna transações agregadas (somadas) agrupadas por subcategoria, mês, ano e tipo para um ano específico. Este endpoint é fundamental para análises financeiras detalhadas, permitindo visualizar quanto você gastou ou recebeu em cada subcategoria por mês. Por exemplo, você pode ver quanto gastou em "Supermercado" em cada mês de 2024. Os dados incluem o total gasto, a contagem de transações, e são separados por tipo (despesa ou renda).'
     })
     @ApiQuery({ name: 'year', required: true, description: 'Ano para agregar transações (formato: YYYY, obrigatório)' })
     @ApiQuery({ name: 'groupId', required: false, description: 'Filtrar por ID do grupo' })
@@ -80,7 +83,7 @@ export class TransactionController {
     @ApiParam({ name: 'id', description: 'ID único da transação' })
     @ApiOperation({ 
         summary: 'Buscar uma transação específica por ID',
-        description: 'Retorna os detalhes completos de uma transação identificada pelo seu ID. A transação deve pertencer ao usuário autenticado. Este endpoint fornece todas as informações da transação incluindo valor, data, descrição, subcategoria associada e tipo (despesa ou receita). É útil para visualizar detalhes antes de editar, para auditoria de registros financeiros, ou para exibir informações completas em uma interface de usuário.'
+        description: 'Retorna os detalhes completos de uma transação identificada pelo seu ID. A transação deve pertencer ao usuário autenticado. Este endpoint fornece todas as informações da transação incluindo valor, data, descrição, subcategoria associada e tipo (despesa ou renda). É útil para visualizar detalhes antes de editar, para auditoria de registros financeiros, ou para exibir informações completas em uma interface de usuário.'
     })
     @ApiResponse({ status: HttpStatus.OK, type: TransactionData, description: 'Transação encontrada e retornada com sucesso' })
     @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Transação não encontrada ou não pertence ao usuário' })
@@ -97,7 +100,7 @@ export class TransactionController {
     @Post()
     @ApiOperation({ 
         summary: 'Criar uma nova transação',
-        description: 'Registra uma nova transação financeira no sistema. Você deve fornecer o valor, data, subcategoria e opcionalmente uma descrição. As transações representam seus gastos e receitas reais, diferentemente dos orçamentos que são apenas planejamento. Cada transação é automaticamente categorizada segundo a subcategoria escolhida, permitindo análises detalhadas posteriores. Use este endpoint sempre que fizer uma compra, receber um pagamento, ou qualquer movimentação financeira que deseje rastrear.'
+        description: 'Registra uma nova transação financeira no sistema. Você deve fornecer o valor, data, subcategoria e opcionalmente uma descrição. As transações representam seus gastos e rendas reais, diferentemente dos orçamentos que são apenas planejamento. Cada transação é automaticamente categorizada segundo a subcategoria escolhida, permitindo análises detalhadas posteriores. Use este endpoint sempre que fizer uma compra, receber um pagamento, ou qualquer movimentação financeira que deseje rastrear.'
     })
     @ApiResponse({ status: HttpStatus.CREATED, type: TransactionData, description: 'Transação criada com sucesso' })
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Dados inválidos, subcategoria não encontrada, ou formato de data inválido' })

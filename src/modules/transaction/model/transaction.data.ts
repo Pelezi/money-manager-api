@@ -3,6 +3,8 @@ import { CategoryType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
 export class TransactionData {
+    @ApiProperty({ description: 'Account ID', example: 1, required: false })
+    public readonly accountId?: number;
 
     @ApiProperty({ description: 'Transaction unique ID', example: 1 })
     public readonly id: number;
@@ -50,6 +52,7 @@ export class TransactionData {
     };
 
     public constructor(entity: any) {
+        this.accountId = entity.accountId;
         this.id = entity.id;
         this.userId = entity.userId;
         this.subcategoryId = entity.subcategoryId;

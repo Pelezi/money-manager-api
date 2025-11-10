@@ -101,6 +101,7 @@ model Transaction {
   userId        Int
   groupId       Int?
   subcategoryId Int
+  accountId     Int?
   title         String
   amount        Decimal      @db.Decimal(10, 2)
   description   String?
@@ -112,10 +113,12 @@ model Transaction {
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   group       Group?      @relation(fields: [groupId], references: [id], onDelete: Cascade)
   subcategory Subcategory @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
+  account     Account?    @relation(fields: [accountId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([groupId])
   @@index([subcategoryId])
+  @@index([accountId])
   @@index([date])
   @@index([type])
 }
@@ -271,6 +274,7 @@ model Account {
   user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   group    Group?           @relation(fields: [groupId], references: [id], onDelete: Cascade)
   balances AccountBalance[]
+  transactions Transaction[]
 
   @@index([userId])
   @@index([groupId])

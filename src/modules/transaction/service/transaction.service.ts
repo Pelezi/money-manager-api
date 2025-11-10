@@ -26,6 +26,7 @@ export class TransactionService {
         userId: number,
         groupId?: number,
         subcategoryId?: number,
+        accountId?: number,
         startDate?: Date,
         endDate?: Date,
         type?: CategoryType
@@ -44,6 +45,10 @@ export class TransactionService {
 
         if (subcategoryId) {
             where.subcategoryId = subcategoryId;
+        }
+
+        if (accountId) {
+            where.accountId = accountId;
         }
 
         if (startDate || endDate) {
@@ -129,9 +134,10 @@ export class TransactionService {
 
         const transaction = await this.prismaService.transaction.create({
             data: {
-                userId: data.userId || userId, // Use provided userId for group transactions, otherwise use authenticated user
+                userId: data.userId || userId,
                 groupId: data.groupId,
                 subcategoryId: data.subcategoryId,
+                accountId: data.accountId,
                 title: data.title,
                 amount: data.amount,
                 description: data.description,
@@ -176,6 +182,9 @@ export class TransactionService {
         }
 
         const updateData: any = { ...data };
+        if (data.accountId !== undefined) {
+            updateData.accountId = data.accountId;
+        }
         
         // Handle date and time combination
         if (data.date) {

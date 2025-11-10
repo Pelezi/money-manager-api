@@ -21,4 +21,5 @@ npm-debug.log
 /dist
 
 # environment
-.env
+.env.development
+.env.production

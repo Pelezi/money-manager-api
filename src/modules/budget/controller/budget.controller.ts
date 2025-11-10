@@ -20,11 +20,11 @@ export class BudgetController {
     @Get()
     @ApiOperation({ 
         summary: 'Listar todos os orçamentos do usuário autenticado',
-        description: 'Retorna todos os orçamentos do usuário com opções avançadas de filtragem. Os orçamentos representam valores planejados para cada subcategoria em um determinado período (mês e ano). Você pode filtrar por ano, mês específico e tipo (EXPENSE para despesas ou INCOME para receitas). Este endpoint é fundamental para visualizar seu planejamento financeiro e comparar com os gastos reais. Os orçamentos são automaticamente sincronizados entre períodos mensais e anuais.'
+        description: 'Retorna todos os orçamentos do usuário com opções avançadas de filtragem. Os orçamentos representam valores planejados para cada subcategoria em um determinado período (mês e ano). Você pode filtrar por ano, mês específico e tipo (EXPENSE para despesas ou INCOME para rendas). Este endpoint é fundamental para visualizar seu planejamento financeiro e comparar com os gastos reais. Os orçamentos são automaticamente sincronizados entre períodos mensais e anuais.'
     })
     @ApiQuery({ name: 'year', required: false, description: 'Filtrar por ano (ex: 2024)' })
     @ApiQuery({ name: 'month', required: false, description: 'Filtrar por mês (1-12, onde 1=Janeiro, 12=Dezembro)' })
-    @ApiQuery({ name: 'type', required: false, enum: ['EXPENSE', 'INCOME'], description: 'Filtrar por tipo de orçamento (EXPENSE=Despesas, INCOME=Receitas)' })
+    @ApiQuery({ name: 'type', required: false, enum: ['EXPENSE', 'INCOME'], description: 'Filtrar por tipo de orçamento (EXPENSE=Despesas, INCOME=Rendas)' })
     @ApiQuery({ name: 'groupId', required: false, description: 'Filtrar por ID do grupo' })
     @ApiResponse({ status: HttpStatus.OK, isArray: true, type: BudgetData, description: 'Lista de orçamentos retornada com sucesso' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
@@ -48,12 +48,12 @@ export class BudgetController {
     @Get('comparison')
     @ApiOperation({ 
         summary: 'Obter comparação entre orçamento planejado e gastos reais',
-        description: 'Compara o valor orçado com os gastos/receitas reais em um período específico. Este endpoint é essencial para análise financeira, mostrando quanto você planejou gastar versus quanto efetivamente gastou. Retorna três valores: o total orçado (budgeted), o total gasto/recebido (actual), e a diferença entre eles (difference). Valores positivos indicam economia (gastou menos que o orçado), valores negativos indicam estouro de orçamento. Pode ser filtrado por ano, mês, subcategoria específica e tipo (despesa ou receita).'
+        description: 'Compara o valor orçado com os gastos/rendas reais em um período específico. Este endpoint é essencial para análise financeira, mostrando quanto você planejou gastar versus quanto efetivamente gastou. Retorna três valores: o total orçado (budgeted), o total gasto/recebido (actual), e a diferença entre eles (difference). Valores positivos indicam economia (gastou menos que o orçado), valores negativos indicam estouro de orçamento. Pode ser filtrado por ano, mês, subcategoria específica e tipo (despesa ou renda).'
     })
     @ApiQuery({ name: 'year', required: true, description: 'Ano para comparação (obrigatório)' })
     @ApiQuery({ name: 'month', required: false, description: 'Mês para comparação (1-12, opcional)' })
     @ApiQuery({ name: 'subcategoryId', required: false, description: 'ID da subcategoria para comparação específica (opcional)' })
-    @ApiQuery({ name: 'type', required: false, enum: ['EXPENSE', 'INCOME'], description: 'Filtrar por tipo (EXPENSE=Despesas, INCOME=Receitas)' })
+    @ApiQuery({ name: 'type', required: false, enum: ['EXPENSE', 'INCOME'], description: 'Filtrar por tipo (EXPENSE=Despesas, INCOME=Rendas)' })
     @ApiQuery({ name: 'groupId', required: false, description: 'Filtrar por ID do grupo' })
     @ApiResponse({ status: HttpStatus.OK, description: 'Comparação retornada com sucesso com campos: budgeted (valor orçado), actual (valor real), difference (diferença)' })
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Parâmetro year obrigatório não fornecido' })
@@ -81,7 +81,7 @@ export class BudgetController {
     @ApiParam({ name: 'id', description: 'ID único do orçamento' })
     @ApiOperation({ 
         summary: 'Buscar um orçamento específico por ID',
-        description: 'Retorna os detalhes completos de um orçamento identificado pelo seu ID. O orçamento deve pertencer ao usuário autenticado. Este endpoint fornece informações detalhadas incluindo o valor orçado, a subcategoria associada, o período (ano e mês), e o tipo (despesa ou receita). Útil para verificar os dados antes de editar ou para exibir informações detalhadas em uma interface de usuário.'
+        description: 'Retorna os detalhes completos de um orçamento identificado pelo seu ID. O orçamento deve pertencer ao usuário autenticado. Este endpoint fornece informações detalhadas incluindo o valor orçado, a subcategoria associada, o período (ano e mês), e o tipo (despesa ou renda). Útil para verificar os dados antes de editar ou para exibir informações detalhadas em uma interface de usuário.'
     })
     @ApiResponse({ status: HttpStatus.OK, type: BudgetData, description: 'Orçamento encontrado e retornado com sucesso' })
     @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Orçamento não encontrado ou não pertence ao usuário' })

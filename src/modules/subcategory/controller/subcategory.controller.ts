@@ -20,7 +20,7 @@ export class SubcategoryController {
     @Get()
     @ApiOperation({ 
         summary: 'Listar todas as subcategorias do usuário autenticado',
-        description: 'Retorna todas as subcategorias do usuário autenticado, com opção de filtrar por categoria. Subcategorias são os itens específicos de despesas ou receitas dentro de uma categoria maior. Por exemplo, dentro da categoria "Moradia", você pode ter subcategorias como "Aluguel", "Condomínio", "Energia", "Água". Use o parâmetro categoryId para filtrar subcategorias de uma categoria específica, facilitando a visualização organizada de seus itens financeiros.'
+        description: 'Retorna todas as subcategorias do usuário autenticado, com opção de filtrar por categoria. Subcategorias são os itens específicos de despesas ou rendas dentro de uma categoria maior. Por exemplo, dentro da categoria "Moradia", você pode ter subcategorias como "Aluguel", "Condomínio", "Energia", "Água". Use o parâmetro categoryId para filtrar subcategorias de uma categoria específica, facilitando a visualização organizada de seus itens financeiros.'
     })
     @ApiQuery({ name: 'categoryId', required: false, description: 'ID da categoria para filtrar subcategorias' })
     @ApiQuery({ name: 'groupId', required: false, description: 'Filtrar por ID do grupo' })
@@ -43,7 +43,7 @@ export class SubcategoryController {
     @ApiParam({ name: 'id', description: 'ID único da subcategoria' })
     @ApiOperation({ 
         summary: 'Buscar uma subcategoria específica por ID',
-        description: 'Retorna os detalhes completos de uma subcategoria identificada pelo seu ID. A subcategoria deve pertencer ao usuário autenticado. Este endpoint fornece informações sobre a subcategoria incluindo seu nome, categoria pai associada e tipo (despesa ou receita). É útil para verificar os dados antes de fazer edições ou para exibir informações detalhadas da subcategoria.'
+        description: 'Retorna os detalhes completos de uma subcategoria identificada pelo seu ID. A subcategoria deve pertencer ao usuário autenticado. Este endpoint fornece informações sobre a subcategoria incluindo seu nome, categoria pai associada e tipo (despesa ou renda). É útil para verificar os dados antes de fazer edições ou para exibir informações detalhadas da subcategoria.'
     })
     @ApiResponse({ status: HttpStatus.OK, type: SubcategoryData, description: 'Subcategoria encontrada e retornada com sucesso' })
     @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Subcategoria não encontrada ou não pertence ao usuário' })
@@ -60,7 +60,7 @@ export class SubcategoryController {
     @Post()
     @ApiOperation({ 
         summary: 'Criar uma nova subcategoria',
-        description: 'Cria uma nova subcategoria vinculada a uma categoria existente. Você deve fornecer o nome da subcategoria e o ID da categoria pai. As subcategorias representam itens específicos de despesas ou receitas. Por exemplo, dentro da categoria "Alimentação", você pode criar subcategorias como "Supermercado", "Restaurantes", "Lanches". Cada subcategoria será usada posteriormente para registrar transações e definir orçamentos detalhados.'
+        description: 'Cria uma nova subcategoria vinculada a uma categoria existente. Você deve fornecer o nome da subcategoria e o ID da categoria pai. As subcategorias representam itens específicos de despesas ou rendas. Por exemplo, dentro da categoria "Alimentação", você pode criar subcategorias como "Supermercado", "Restaurantes", "Lanches". Cada subcategoria será usada posteriormente para registrar transações e definir orçamentos detalhados.'
     })
     @ApiResponse({ status: HttpStatus.CREATED, type: SubcategoryData, description: 'Subcategoria criada com sucesso' })
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Dados inválidos ou categoria pai não encontrada' })
