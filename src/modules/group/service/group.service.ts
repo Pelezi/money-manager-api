@@ -79,8 +79,8 @@ export class GroupService {
                 roles: {
                     create: [
                         {
-                            name: 'Owner',
-                            description: 'Full access to all features',
+                            name: 'Dono',
+                            description: 'Acesso total a todas as funcionalidades',
                             canViewTransactions: true,
                             canManageOwnTransactions: true,
                             canManageGroupTransactions: true,
@@ -96,8 +96,8 @@ export class GroupService {
                             canManageGroup: true
                         },
                         {
-                            name: 'Member',
-                            description: 'Can view everything and manage own data',
+                            name: 'Membro',
+                            description: 'Pode ver tudo e gerenciar seus próprios dados',
                             canViewTransactions: true,
                             canManageOwnTransactions: true,
                             canManageGroupTransactions: false,
@@ -113,8 +113,8 @@ export class GroupService {
                             canManageGroup: false
                         },
                         {
-                            name: 'Viewer',
-                            description: 'Read-only access to all features',
+                            name: 'Leitor',
+                            description: 'Acesso somente leitura a todas as funcionalidades',
                             canViewTransactions: true,
                             canManageOwnTransactions: false,
                             canManageGroupTransactions: false,
@@ -136,7 +136,7 @@ export class GroupService {
 
         // Add owner as member with Owner role
         const ownerRole = await this.prismaService.groupRole.findFirst({
-            where: { groupId: group.id, name: 'Owner' }
+            where: { groupId: group.id, name: 'Dono' }
         });
 
         if (ownerRole) {
