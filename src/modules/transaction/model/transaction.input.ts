@@ -23,7 +23,7 @@ export class TransactionInput {
     @ApiProperty({ description: 'Transaction time', example: '14:30:00', required: false })
     public readonly time?: string;
 
-    @ApiProperty({ description: 'Transaction type - EXPENSE (0) or INCOME (1)', enum: ['EXPENSE', 'INCOME'], example: 'EXPENSE', required: false })
+    @ApiProperty({ description: 'Transaction type - EXPENSE, INCOME or TRANSFER', enum: ['EXPENSE', 'INCOME', 'TRANSFER'], example: 'EXPENSE', required: false })
     public readonly type?: CategoryType;
 
     @ApiProperty({ description: 'Group ID', example: 1, required: false })
@@ -31,4 +31,7 @@ export class TransactionInput {
 
     @ApiProperty({ description: 'User ID - Only for group transactions to specify which member made the transaction', example: 1, required: false })
     public readonly userId?: number;
+
+    @ApiProperty({ description: 'Destination account ID (for transfers)', example: 2, required: false })
+    public readonly toAccountId?: number;
 }

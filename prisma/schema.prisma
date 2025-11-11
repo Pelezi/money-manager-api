@@ -100,7 +100,7 @@ model Transaction {
   id            Int          @id @default(autoincrement())
   userId        Int
   groupId       Int?
-  subcategoryId Int
+  subcategoryId Int?
   accountId     Int
   title         String?
   amount        Decimal      @db.Decimal(10, 2)
@@ -109,16 +109,19 @@ model Transaction {
   type          CategoryType @default(EXPENSE)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
+  toAccountId Int?
 
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   group       Group?      @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  subcategory Subcategory @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
+  subcategory Subcategory? @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
   account     Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountTo   Account?    @relation("TransactionToAccount", fields: [toAccountId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([groupId])
   @@index([subcategoryId])
   @@index([accountId])
+  @@index([toAccountId])
   @@index([date])
   @@index([type])
 }
@@ -126,6 +129,7 @@ model Transaction {
 enum CategoryType {
   EXPENSE
   INCOME
+  TRANSFER
 }
 
 model Group {
@@ -275,6 +279,7 @@ model Account {
   group    Group?           @relation(fields: [groupId], references: [id], onDelete: Cascade)
   balances AccountBalance[]
   transactions Transaction[]
+  transactionsTo Transaction[] @relation("TransactionToAccount")
 
   @@index([userId])
   @@index([groupId])

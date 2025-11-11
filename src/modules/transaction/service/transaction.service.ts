@@ -48,7 +48,10 @@ export class TransactionService {
     }
 
     if (accountId) {
-      where.accountId = accountId;
+      where.OR = [
+        { accountId },
+        { toAccountId: accountId }
+      ];
     }
 
     if (startDate || endDate) {
@@ -87,18 +90,21 @@ export class TransactionService {
   }
 
   public async create(userId: number, data: TransactionInput): Promise<TransactionData> {
+    const createData: any = {
+      userId: data.userId || userId,
+      groupId: data.groupId,
+      subcategoryId: data.subcategoryId,
+      accountId: data.accountId,
+      toAccountId: data.toAccountId,
+      title: data.title,
+      amount: data.amount,
+      description: data.description,
+      date: data.date + (data.time ? `T${data.time}Z` : 'T00:00:00Z'),
+      type: data.type
+    };
+
     const transaction = await this.prismaService.transaction.create({
-      data: {
-        userId: data.userId || userId,
-        groupId: data.groupId,
-        subcategoryId: data.subcategoryId,
-        accountId: data.accountId,
-        title: data.title,
-        amount: data.amount,
-        description: data.description,
-        date: data.date + (data.time ? `T${data.time}Z` : 'T00:00:00Z'),
-        type: data.type
-      },
+      data: createData,
       include: {
         user: { select: { id: true, firstName: true, lastName: true } },
         subcategory: { include: { category: true } }
@@ -117,6 +123,9 @@ export class TransactionService {
     const updateData: any = { ...data };
     if (data.accountId !== undefined) {
       updateData.accountId = data.accountId;
+    }
+    if (data.toAccountId !== undefined) {
+      updateData.toAccountId = data.toAccountId;
     }
 
     // Combine date/time per payload:
@@ -159,11 +168,20 @@ export class TransactionService {
   ): Promise<{ subcategoryId: number; total: number }[]> {
 
     const transactions = await this.prismaService.transaction.findMany({
-      where: { userId, groupId: null, date: { gte: startDate, lte: endDate } }
+      where: { 
+        userId, 
+        groupId: null, 
+        date: { 
+          gte: startDate, 
+          lte: endDate 
+        },
+        type: { not: 'TRANSFER' }
+      }
     });
 
     const map = new Map<number, number>();
     for (const t of transactions) {
+      if (!t.subcategoryId) continue;
       const id = t.subcategoryId;
       map.set(id, (map.get(id) ?? 0) + Number(t.amount));
     }
@@ -185,12 +203,14 @@ export class TransactionService {
     } else {
       where.userId = userId;
       where.groupId = null;
+      where.type = { not: 'TRANSFER' };
     }
 
     const transactions = await this.prismaService.transaction.findMany({ where });
 
     const acc: Record<string, { subcategoryId: number; total: number; count: number; month: number; year: number; type: CategoryType }> = {};
     for (const t of transactions) {
+      if (!t.subcategoryId) continue;
       const d = new Date(t.date);
       const key = `${t.subcategoryId}-${d.getMonth() + 1}-${d.getFullYear()}-${t.type}`;
       if (!acc[key]) {

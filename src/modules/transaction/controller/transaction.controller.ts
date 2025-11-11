@@ -29,7 +29,7 @@ export class TransactionController {
     @ApiQuery({ name: 'accountId', required: false, description: 'Filtrar por ID da conta' })
     @ApiQuery({ name: 'startDate', required: false, description: 'Data inicial para filtro (formato ISO: YYYY-MM-DD)' })
     @ApiQuery({ name: 'endDate', required: false, description: 'Data final para filtro (formato ISO: YYYY-MM-DD)' })
-    @ApiQuery({ name: 'type', required: false, enum: ['EXPENSE', 'INCOME'], description: 'Filtrar por tipo (EXPENSE=Despesas, INCOME=Rendas)' })
+    @ApiQuery({ name: 'type', required: false, enum: ['EXPENSE', 'INCOME', 'TRANSFER'], description: 'Filtrar por tipo (EXPENSE=Despesas, INCOME=Rendas, TRANSFER=Transferências)' })
     @ApiResponse({ status: HttpStatus.OK, isArray: true, type: TransactionData, description: 'Lista de transações retornada com sucesso' })
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Formato de data inválido' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })

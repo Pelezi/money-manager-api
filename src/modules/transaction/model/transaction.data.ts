@@ -27,8 +27,11 @@ export class TransactionData {
     @ApiProperty({ description: 'Transaction date', example: '2024-01-15T00:00:00Z' })
     public readonly date: Date;
 
-    @ApiProperty({ description: 'Transaction type', enum: ['EXPENSE', 'INCOME'], example: 'EXPENSE' })
+    @ApiProperty({ description: 'Transaction type', enum: ['EXPENSE', 'INCOME', 'TRANSFER'], example: 'EXPENSE' })
     public readonly type: CategoryType;
+
+    @ApiProperty({ description: 'Destination account ID for transfers', example: 2, required: false })
+    public readonly toAccountId?: number;
 
     @ApiProperty({ description: 'Created at', example: '2024-01-01T00:00:00Z' })
     public readonly createdAt: Date;
@@ -61,6 +64,7 @@ export class TransactionData {
         this.description = entity.description || undefined;
         this.date = entity.date;
         this.type = entity.type;
+        this.toAccountId = entity.toAccountId || undefined;
         this.createdAt = entity.createdAt;
         
         // Include user data if available
