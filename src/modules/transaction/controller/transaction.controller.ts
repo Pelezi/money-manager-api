@@ -92,12 +92,7 @@ export class TransactionController {
     @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Transação não encontrada ou não pertence ao usuário' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
     public async findById(@Param('id') id: string, @Request() req: AuthenticatedRequest): Promise<TransactionData> {
-        const userId = req?.user?.userId || 1;
-        const transaction = await this.transactionService.findById(parseInt(id), userId);
-        if (!transaction) {
-            throw new Error('Transação não encontrada');
-        }
-        return transaction;
+        return await this.transactionService.findById(parseInt(id));
     }
 
     @Post()

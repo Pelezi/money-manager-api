@@ -76,17 +76,21 @@ export class TransactionService {
     return transactions.map(t => new TransactionData(t));
   }
 
-  public async findById(id: number, userId: number): Promise<TransactionData | null> {
-    const transaction = await this.prismaService.transaction.findFirst({
-      where: { id, userId },
-      include: {
-        user: { select: { id: true, firstName: true, lastName: true } },
-        subcategory: { include: { category: true } }
-      }
-    });
+  public async findById(id: number): Promise<TransactionData> {
+    try {
+      const transaction = await this.prismaService.transaction.findFirst({
+        where: { id },
+        include: {
+          user: { select: { id: true, firstName: true, lastName: true } },
+          subcategory: { include: { category: true } }
+        }
+      });
 
-    if (!transaction) return null;
-    return new TransactionData(transaction);
+      if (!transaction) throw new HttpException('Transação não encontrada', 404);
+      return new TransactionData(transaction);
+    } catch (error) {
+      throw new HttpException(error.message, error.status || 500);
+    }
   }
 
   public async create(userId: number, data: TransactionInput): Promise<TransactionData> {
@@ -99,8 +103,8 @@ export class TransactionService {
         groupId: data.groupId,
         subcategoryId: data.subcategoryId,
         accountId: data.accountId,
-    // Frontend sometimes sends 0 when no account is selected — coerce 0 -> null so DB FK isn't violated
-    toAccountId: data.toAccountId && Number(data.toAccountId) > 0 ? data.toAccountId : null,
+        // Frontend sometimes sends 0 when no account is selected — coerce 0 -> null so DB FK isn't violated
+        toAccountId: data.toAccountId && Number(data.toAccountId) > 0 ? data.toAccountId : null,
         title: data.title,
         amount: data.amount,
         description: data.description,
