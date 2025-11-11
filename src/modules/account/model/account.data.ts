@@ -9,6 +9,12 @@ export class AccountData {
     @ApiProperty({ description: 'User ID', example: 1 })
     public readonly userId: number;
 
+    @ApiProperty({ description: 'User', required: false })
+    public readonly user?: {
+        firstName: string;
+        lastName: string;
+    };
+
     @ApiProperty({ description: 'Group ID', example: 1, required: false })
     public readonly groupId?: number;
 
@@ -24,7 +30,7 @@ export class AccountData {
     @ApiProperty({ description: 'Updated at', example: '2024-01-01T00:00:00Z' })
     public readonly updatedAt: Date;
 
-    public constructor(entity: Account) {
+    public constructor(entity: Account & { user?: { firstName: string; lastName: string } | null }) {
         this.id = entity.id;
         this.userId = entity.userId;
         this.groupId = entity.groupId ?? undefined;
@@ -32,6 +38,10 @@ export class AccountData {
         this.type = entity.type;
         this.createdAt = entity.createdAt;
         this.updatedAt = entity.updatedAt;
+        this.user = entity.user ? {
+            firstName: entity.user.firstName,
+            lastName: entity.user.lastName
+        } : undefined;
     }
 
 }

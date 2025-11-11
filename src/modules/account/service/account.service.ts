@@ -65,6 +65,11 @@ export class AccountService {
         }
 
         const accounts = await this.prismaService.account.findMany({
+            include: {
+                user: {
+                    select: {firstName: true, lastName: true}
+                },
+            },
             where,
             orderBy: [
                 { createdAt: 'desc' }
