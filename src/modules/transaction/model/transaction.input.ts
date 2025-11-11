@@ -2,8 +2,8 @@ import { ApiProperty } from '@nestjs/swagger';
 import { CategoryType } from '@prisma/client';
 
 export class TransactionInput {
-    @ApiProperty({ description: 'Account ID', example: 1, required: false })
-    public readonly accountId?: number;
+    @ApiProperty({ description: 'Account ID', example: 1, required: true })
+    public readonly accountId: number;
     
     @ApiProperty({ description: 'Subcategory ID', example: 1 })
     public readonly subcategoryId: number;

@@ -7,361 +7,209 @@ import { TransactionData, TransactionInput, TransactionAggregated } from '../mod
 @Injectable()
 export class TransactionService {
 
-    public constructor(
-        private readonly prismaService: PrismaService
-    ) { }
+  public constructor(
+    private readonly prismaService: PrismaService
+  ) { }
 
-    /**
-     * Find all transactions for a user
-     *
-     * @param userId User ID
-     * @param groupId Optional group filter
-     * @param accountId Optional account filter
-     * @param categoryId Optional category filter
-     * @param subcategoryId Optional subcategory filter
-     * @param startDate Optional start date filter
-     * @param endDate Optional end date filter
-     * @param type Optional transaction type filter (EXPENSE/INCOME)
-     * @returns A transaction list
-     */
-    public async findByUser(
-        userId: number,
-        groupId?: number,
-        categoryId?: number,
-        subcategoryId?: number,
-        accountId?: number,
-        startDate?: Date,
-        endDate?: Date,
-        type?: CategoryType
-    ): Promise<TransactionData[]> {
-        
+  public async findByUser(
+    userId: number,
+    groupId?: number,
+    categoryId?: number,
+    subcategoryId?: number,
+    accountId?: number,
+    startDate?: Date,
+    endDate?: Date,
+    type?: CategoryType
+  ): Promise<TransactionData[]> {
 
-        const where: Prisma.TransactionWhereInput = {};
+    const where: Prisma.TransactionWhereInput = {};
 
-        if (groupId !== undefined) {
-            where.groupId = groupId;
-        } else {
-            where.userId = userId;
-            where.groupId = null;
-        }
-
-        if (categoryId) {
-            const subcategories = await this.prismaService.subcategory.findMany({
-                where: { categoryId }
-            });
-            const subcategoryIds = subcategories.map(s => s.id);
-            if (subcategoryIds.length > 0) {
-                where.subcategoryId = { in: subcategoryIds };
-            } else {
-                return [];
-            }
-        }
-
-        if (subcategoryId) {
-            where.subcategoryId = subcategoryId;
-        }
-
-        if (accountId) {
-            where.accountId = accountId;
-        }
-
-        if (startDate || endDate) {
-            where.date = {};
-            if (startDate) {
-                where.date.gte = startDate;
-            }
-            if (endDate) {
-                where.date.lte = endDate;
-            }
-        }
-
-        if (type) {
-            where.type = type;
-        }
-
-        const transactions = await this.prismaService.transaction.findMany({
-            where,
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true
-                    }
-                },
-                subcategory: {
-                    include: {
-                        category: true
-                    }
-                }
-            },
-            orderBy: {
-                date: 'desc'
-            }
-        });
-
-        return transactions.map(transaction => new TransactionData(transaction));
+    if (groupId !== undefined) {
+      where.groupId = groupId;
+    } else {
+      where.userId = userId;
+      where.groupId = null;
     }
 
-    /**
-     * Find a transaction by ID
-     *
-     * @param id Transaction ID
-     * @param userId User ID
-     * @returns A transaction or null
-     */
-    public async findById(id: number, userId: number): Promise<TransactionData | null> {
-
-        const transaction = await this.prismaService.transaction.findFirst({
-            where: { id, userId },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true
-                    }
-                },
-                subcategory: {
-                    include: {
-                        category: true
-                    }
-                }
-            }
-        });
-
-        if (!transaction) {
-            return null;
-        }
-
-        return new TransactionData(transaction);
+    if (categoryId) {
+      const subcategories = await this.prismaService.subcategory.findMany({
+        where: { categoryId }
+      });
+      const subcategoryIds = subcategories.map(s => s.id);
+      if (subcategoryIds.length > 0) {
+        where.subcategoryId = { in: subcategoryIds };
+      } else {
+        return [];
+      }
     }
 
-    /**
-     * Create a new transaction
-     *
-     * @param userId User ID (defaults to authenticated user, can be overridden for group transactions)
-     * @param data Transaction details
-     * @returns A transaction created in the database
-     */
-    public async create(userId: number, data: TransactionInput): Promise<TransactionData> {
-
-        const transaction = await this.prismaService.transaction.create({
-            data: {
-                userId: data.userId || userId,
-                groupId: data.groupId,
-                subcategoryId: data.subcategoryId,
-                accountId: data.accountId,
-                title: data.title,
-                amount: data.amount,
-                description: data.description,
-                date: data.date + (data.time ? `T${data.time}Z` : 'T00:00:00Z'),
-                type: data.type
-            },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true
-                    }
-                },
-                subcategory: {
-                    include: {
-                        category: true
-                    }
-                }
-            }
-        });
-
-        return new TransactionData(transaction);
+    if (subcategoryId) {
+      where.subcategoryId = subcategoryId;
     }
 
-    /**
-     * Update a transaction
-     *
-     * @param id Transaction ID
-     * @param userId User ID
-     * @param data Transaction details
-     * @returns Updated transaction
-     */
-    public async update(id: number, userId: number, data: Partial<TransactionInput>): Promise<TransactionData> {
-
-        const transaction = await this.prismaService.transaction.findFirst({
-            where: { id, userId }
-        });
-
-        if (!transaction) {
-            throw new NotFoundException('Transaction not found');
-        }
-
-        const updateData: any = { ...data };
-        if (data.accountId !== undefined) {
-            updateData.accountId = data.accountId;
-        }
-        
-        // Handle date and time combination
-        if (data.date) {
-            updateData.date = data.date + (data.time ? `T${data.time}Z` : 'T00:00:00Z');
-            delete updateData.time;
-        }
-
-        const updated = await this.prismaService.transaction.update({
-            where: { id },
-            data: updateData,
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true
-                    }
-                },
-                subcategory: {
-                    include: {
-                        category: true
-                    }
-                }
-            }
-        });
-
-        return new TransactionData(updated);
+    if (accountId) {
+      where.accountId = accountId;
     }
 
-    /**
-     * Delete a transaction
-     *
-     * @param id Transaction ID
-     * @param userId User ID
-     */
-    public async delete(id: number, userId: number): Promise<void> {
-
-        const transaction = await this.prismaService.transaction.findFirst({
-            where: { id, userId }
-        });
-
-        if (!transaction) {
-            throw new NotFoundException('Transaction not found');
-        }
-
-        await this.prismaService.transaction.delete({
-            where: { id }
-        });
+    if (startDate || endDate) {
+      where.date = {};
+      if (startDate) where.date.gte = startDate;
+      if (endDate)   where.date.lte = endDate;
     }
 
-    /**
-     * Get aggregated spending by subcategory
-     *
-     * @param userId User ID
-     * @param startDate Start date
-     * @param endDate End date
-     * @returns Aggregated spending data
-     */
-    public async getAggregatedSpending(
-        userId: number,
-        startDate: Date,
-        endDate: Date
-    ): Promise<{ subcategoryId: number; total: number }[]> {
-
-        const transactions = await this.prismaService.transaction.findMany({
-            where: {
-                userId,
-                groupId: null,
-                date: {
-                    gte: startDate,
-                    lte: endDate
-                }
-            }
-        });
-
-        const aggregated = transactions.reduce((acc, transaction) => {
-            const subcategoryId = transaction.subcategoryId;
-            if (!acc[subcategoryId]) {
-                acc[subcategoryId] = 0;
-            }
-            acc[subcategoryId] += Number(transaction.amount);
-            return acc;
-        }, {} as Record<number, number>);
-
-        return Object.entries(aggregated).map(([subcategoryId, total]) => ({
-            subcategoryId: parseInt(subcategoryId),
-            total
-        }));
+    if (type) {
+      where.type = type;
     }
 
-    /**
-     * Get aggregated transactions by year, grouped by subcategory, month, and type
-     *
-     * @param userId User ID
-     * @param year Year to filter transactions
-     * @param groupId Optional group filter
-     * @returns Aggregated transaction data grouped by subcategory, month, year, and type
-     */
-    public async getAggregatedByYear(
-        userId: number,
-        year: number,
-        groupId?: number
-    ): Promise<TransactionAggregated[]> {
+    const transactions = await this.prismaService.transaction.findMany({
+      where,
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true } },
+        subcategory: { include: { category: true } }
+      },
+      orderBy: { date: 'desc' }
+    });
 
-        const startDate = new Date(year, 0, 1);
-        const endDate = new Date(year + 1, 0, 1);
+    return transactions.map(t => new TransactionData(t));
+  }
 
-        const where: Prisma.TransactionWhereInput = {
-            date: {
-                gte: startDate,
-                lt: endDate
-            }
+  public async findById(id: number, userId: number): Promise<TransactionData | null> {
+    const transaction = await this.prismaService.transaction.findFirst({
+      where: { id, userId },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true } },
+        subcategory: { include: { category: true } }
+      }
+    });
+
+    if (!transaction) return null;
+    return new TransactionData(transaction);
+  }
+
+  public async create(userId: number, data: TransactionInput): Promise<TransactionData> {
+    const transaction = await this.prismaService.transaction.create({
+      data: {
+        userId: data.userId || userId,
+        groupId: data.groupId,
+        subcategoryId: data.subcategoryId,
+        accountId: data.accountId,
+        title: data.title,
+        amount: data.amount,
+        description: data.description,
+        date: data.date + (data.time ? `T${data.time}Z` : 'T00:00:00Z'),
+        type: data.type
+      },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true } },
+        subcategory: { include: { category: true } }
+      }
+    });
+
+    return new TransactionData(transaction);
+  }
+
+  public async update(id: number, userId: number, data: Partial<TransactionInput>): Promise<TransactionData> {
+    const transaction = await this.prismaService.transaction.findFirst({ where: { id, userId } });
+    if (!transaction) {
+      throw new NotFoundException('Transaction not found');
+    }
+
+    const updateData: any = { ...data };
+    if (data.accountId !== undefined) {
+      updateData.accountId = data.accountId;
+    }
+
+    // Combine date/time per payload:
+    // - If date is provided: use it and (optional) time.
+    // - If only time is provided: keep existing date and replace the time.
+    if (data.date) {
+      updateData.date = data.date + (data.time ? `T${data.time}Z` : 'T00:00:00Z');
+      delete updateData.time;
+    } else if (data.time) {
+      const d = new Date(transaction.date);
+      const yyyy = d.toISOString().slice(0, 10); // YYYY-MM-DD from existing
+      updateData.date = `${yyyy}T${data.time}Z`;
+      delete updateData.time;
+    }
+
+    const updated = await this.prismaService.transaction.update({
+      where: { id },
+      data: updateData,
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true } },
+        subcategory: { include: { category: true } }
+      }
+    });
+
+    return new TransactionData(updated);
+  }
+
+  public async delete(id: number, userId: number): Promise<void> {
+    const transaction = await this.prismaService.transaction.findFirst({ where: { id, userId } });
+    if (!transaction) {
+      throw new NotFoundException('Transaction not found');
+    }
+    await this.prismaService.transaction.delete({ where: { id } });
+  }
+
+  public async getAggregatedSpending(
+    userId: number,
+    startDate: Date,
+    endDate: Date
+  ): Promise<{ subcategoryId: number; total: number }[]> {
+
+    const transactions = await this.prismaService.transaction.findMany({
+      where: { userId, groupId: null, date: { gte: startDate, lte: endDate } }
+    });
+
+    const map = new Map<number, number>();
+    for (const t of transactions) {
+      const id = t.subcategoryId;
+      map.set(id, (map.get(id) ?? 0) + Number(t.amount));
+    }
+
+    return Array.from(map.entries()).map(([subcategoryId, total]) => ({ subcategoryId, total }));
+  }
+
+  public async getAggregatedByYear(
+    userId: number,
+    year: number,
+    groupId?: number
+  ): Promise<TransactionAggregated[]> {
+    const startDate = new Date(year, 0, 1);
+    const endDate = new Date(year + 1, 0, 1);
+
+    const where: Prisma.TransactionWhereInput = { date: { gte: startDate, lt: endDate } };
+    if (groupId !== undefined) {
+      where.groupId = groupId;
+    } else {
+      where.userId = userId;
+      where.groupId = null;
+    }
+
+    const transactions = await this.prismaService.transaction.findMany({ where });
+
+    const acc: Record<string, { subcategoryId: number; total: number; count: number; month: number; year: number; type: CategoryType }> = {};
+    for (const t of transactions) {
+      const d = new Date(t.date);
+      const key = `${t.subcategoryId}-${d.getMonth() + 1}-${d.getFullYear()}-${t.type}`;
+      if (!acc[key]) {
+        acc[key] = {
+          subcategoryId: t.subcategoryId,
+          total: 0,
+          count: 0,
+          month: d.getMonth() + 1,
+          year: d.getFullYear(),
+          type: t.type,
         };
-
-        // If groupId is provided, filter by group (accessible to all group members)
-        // Otherwise, filter by userId (personal data) and ensure groupId is null
-        if (groupId !== undefined) {
-            where.groupId = groupId;
-        } else {
-            where.userId = userId;
-            where.groupId = null;
-        }
-
-        const transactions = await this.prismaService.transaction.findMany({
-            where,
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true
-                    }
-                }
-            }
-        });
-
-        // Group by subcategoryId, month, year, and type (and optionally userId for group analytics)
-        const aggregated = transactions.reduce((acc, transaction) => {
-            const date = new Date(transaction.date);
-            const month = date.getMonth() + 1; // 1-12
-            const year = date.getFullYear();
-            const key = `${transaction.subcategoryId}-${month}-${year}-${transaction.type}${groupId ? `-${transaction.userId}` : ''}`;
-            
-            if (!acc[key]) {
-                acc[key] = {
-                    subcategoryId: transaction.subcategoryId,
-                    total: 0,
-                    count: 0,
-                    month,
-                    year,
-                    type: transaction.type,
-                    userId: groupId ? transaction.userId : undefined,
-                    user: groupId ? transaction.user : undefined
-                };
-            }
-            
-            acc[key].total += Number(transaction.amount);
-            acc[key].count += 1;
-            
-            return acc;
-        }, {} as Record<string, { subcategoryId: number; total: number; count: number; month: number; year: number; type: CategoryType; userId?: number; user?: any }>);
-
-        return Object.values(aggregated).map(data => new TransactionAggregated(data));
+      }
+      acc[key].total += Number(t.amount);
+      acc[key].count += 1;
     }
 
+    return Object.values(acc).map(({ subcategoryId, total, count, month, year, type }) =>
+      new TransactionAggregated({ subcategoryId, total, count, month, year, type })
+    );
+  }
 }
+ 

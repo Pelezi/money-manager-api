@@ -3,8 +3,8 @@ import { CategoryType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
 export class TransactionData {
-    @ApiProperty({ description: 'Account ID', example: 1, required: false })
-    public readonly accountId?: number;
+    @ApiProperty({ description: 'Account ID', example: 1, required: true })
+    public readonly accountId: number;
 
     @ApiProperty({ description: 'Transaction unique ID', example: 1 })
     public readonly id: number;
