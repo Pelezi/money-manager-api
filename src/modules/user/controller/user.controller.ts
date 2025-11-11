@@ -121,7 +121,7 @@ export class UserController {
     @ApiQuery({ name: 'query', required: true, description: 'Termo de pesquisa para o email ou nome do usuário' })
     @ApiResponse({ status: HttpStatus.OK, isArray: true, type: UserData, description: 'Lista de usuários encontrados' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
-    public async searchUsers(@Query('query') query: string): Promise<UserData[]> {
+    public async searchUsers(@Query('q') query: string): Promise<UserData[]> {
         return this.userService.searchByEmailOrName(query);
     }
 
