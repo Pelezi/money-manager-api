@@ -99,7 +99,8 @@ export class TransactionService {
         groupId: data.groupId,
         subcategoryId: data.subcategoryId,
         accountId: data.accountId,
-        toAccountId: data.toAccountId,
+    // Frontend sometimes sends 0 when no account is selected — coerce 0 -> null so DB FK isn't violated
+    toAccountId: data.toAccountId && Number(data.toAccountId) > 0 ? data.toAccountId : null,
         title: data.title,
         amount: data.amount,
         description: data.description,
@@ -110,7 +111,7 @@ export class TransactionService {
       // Handle TRANSFER transactions: they should not reference a subcategory
       if (data.type === CategoryType.TRANSFER) {
         createData.subcategoryId = null;
-        if (!data.toAccountId) {
+        if (!data.toAccountId || Number(data.toAccountId) <= 0) {
           throw new HttpException('toAccountId is required for transfer transactions', 400);
         }
       } else {
@@ -161,7 +162,8 @@ export class TransactionService {
         updateData.accountId = data.accountId;
       }
       if (data.toAccountId !== undefined) {
-        updateData.toAccountId = data.toAccountId;
+        // Coerce 0 -> null (frontend uses 0 as 'not selected')
+        updateData.toAccountId = Number(data.toAccountId) > 0 ? data.toAccountId : null;
       }
 
       // Combine date/time per payload:
