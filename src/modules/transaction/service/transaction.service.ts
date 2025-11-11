@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, HttpException } from '@nestjs/common';
 import { CategoryType, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../common';
@@ -57,7 +57,7 @@ export class TransactionService {
     if (startDate || endDate) {
       where.date = {};
       if (startDate) where.date.gte = startDate;
-      if (endDate)   where.date.lte = endDate;
+      if (endDate) where.date.lte = endDate;
     }
 
     if (type) {
@@ -90,75 +90,118 @@ export class TransactionService {
   }
 
   public async create(userId: number, data: TransactionInput): Promise<TransactionData> {
-    const createData: any = {
-      userId: data.userId || userId,
-      groupId: data.groupId,
-      subcategoryId: data.subcategoryId,
-      accountId: data.accountId,
-      toAccountId: data.toAccountId,
-      title: data.title,
-      amount: data.amount,
-      description: data.description,
-      date: data.date + (data.time ? `T${data.time}Z` : 'T00:00:00Z'),
-      type: data.type
-    };
+    try {
 
-    const transaction = await this.prismaService.transaction.create({
-      data: createData,
-      include: {
-        user: { select: { id: true, firstName: true, lastName: true } },
-        subcategory: { include: { category: true } }
+      const resolvedUserId = data.userId || userId;
+
+      const createData: any = {
+        userId: resolvedUserId,
+        groupId: data.groupId,
+        subcategoryId: data.subcategoryId,
+        accountId: data.accountId,
+        toAccountId: data.toAccountId,
+        title: data.title,
+        amount: data.amount,
+        description: data.description,
+        date: data.date + (data.time ? `T${data.time}Z` : 'T00:00:00Z'),
+        type: data.type
+      };
+
+      // Handle TRANSFER transactions: they should not reference a subcategory
+      if (data.type === CategoryType.TRANSFER) {
+        createData.subcategoryId = null;
+        if (!data.toAccountId) {
+          throw new HttpException('toAccountId is required for transfer transactions', 400);
+        }
+      } else {
+        // If a subcategoryId was provided, validate it exists and belongs to the same user/group
+        if (data.subcategoryId !== undefined && data.subcategoryId !== null) {
+          const subcategory = await this.prismaService.subcategory.findUnique({ where: { id: data.subcategoryId } });
+          if (!subcategory) {
+            throw new HttpException('Subcategory not found', 400);
+          }
+
+          // If transaction is for a group, subcategory must belong to that group. Otherwise it must belong to the user.
+          if (createData.groupId !== undefined && createData.groupId !== null) {
+            if (subcategory.groupId !== createData.groupId) {
+              throw new HttpException('Subcategory does not belong to this group', 400);
+            }
+          } else {
+            if (subcategory.userId !== resolvedUserId) {
+              throw new HttpException('Subcategory does not belong to this user', 400);
+            }
+          }
+        }
       }
-    });
 
-    return new TransactionData(transaction);
+      const transaction = await this.prismaService.transaction.create({
+        data: createData,
+        include: {
+          user: { select: { id: true, firstName: true, lastName: true } },
+          subcategory: { include: { category: true } }
+        }
+      });
+
+      return new TransactionData(transaction);
+    }
+    catch (error) {
+      throw new HttpException(error.message, error.status || 500);
+    }
   }
 
   public async update(id: number, userId: number, data: Partial<TransactionInput>): Promise<TransactionData> {
-    const transaction = await this.prismaService.transaction.findFirst({ where: { id, userId } });
-    if (!transaction) {
-      throw new NotFoundException('Transaction not found');
-    }
-
-    const updateData: any = { ...data };
-    if (data.accountId !== undefined) {
-      updateData.accountId = data.accountId;
-    }
-    if (data.toAccountId !== undefined) {
-      updateData.toAccountId = data.toAccountId;
-    }
-
-    // Combine date/time per payload:
-    // - If date is provided: use it and (optional) time.
-    // - If only time is provided: keep existing date and replace the time.
-    if (data.date) {
-      updateData.date = data.date + (data.time ? `T${data.time}Z` : 'T00:00:00Z');
-      delete updateData.time;
-    } else if (data.time) {
-      const d = new Date(transaction.date);
-      const yyyy = d.toISOString().slice(0, 10); // YYYY-MM-DD from existing
-      updateData.date = `${yyyy}T${data.time}Z`;
-      delete updateData.time;
-    }
-
-    const updated = await this.prismaService.transaction.update({
-      where: { id },
-      data: updateData,
-      include: {
-        user: { select: { id: true, firstName: true, lastName: true } },
-        subcategory: { include: { category: true } }
+    try {
+      const transaction = await this.prismaService.transaction.findFirst({ where: { id, userId } });
+      if (!transaction) {
+        throw new HttpException('Transaction not found', 404);
       }
-    });
 
-    return new TransactionData(updated);
+      const updateData: any = { ...data };
+      if (data.accountId !== undefined) {
+        updateData.accountId = data.accountId;
+      }
+      if (data.toAccountId !== undefined) {
+        updateData.toAccountId = data.toAccountId;
+      }
+
+      // Combine date/time per payload:
+      // - If date is provided: use it and (optional) time.
+      // - If only time is provided: keep existing date and replace the time.
+      if (data.date) {
+        updateData.date = data.date + (data.time ? `T${data.time}Z` : 'T00:00:00Z');
+        delete updateData.time;
+      } else if (data.time) {
+        const d = new Date(transaction.date);
+        const yyyy = d.toISOString().slice(0, 10); // YYYY-MM-DD from existing
+        updateData.date = `${yyyy}T${data.time}Z`;
+        delete updateData.time;
+      }
+
+      const updated = await this.prismaService.transaction.update({
+        where: { id },
+        data: updateData,
+        include: {
+          user: { select: { id: true, firstName: true, lastName: true } },
+          subcategory: { include: { category: true } }
+        }
+      });
+
+      return new TransactionData(updated);
+    } catch (error) {
+      throw new HttpException(error.message, error.status || 500);
+    }
   }
 
   public async delete(id: number, userId: number): Promise<void> {
-    const transaction = await this.prismaService.transaction.findFirst({ where: { id, userId } });
-    if (!transaction) {
-      throw new NotFoundException('Transaction not found');
+    try {
+      const transaction = await this.prismaService.transaction.findFirst({ where: { id, userId } });
+      if (!transaction) {
+        throw new HttpException('Transaction not found', 404);
+      }
+      await this.prismaService.transaction.delete({ where: { id } });
+    } catch (error) {
+      throw new HttpException(error.message, error.status || 500);
     }
-    await this.prismaService.transaction.delete({ where: { id } });
   }
 
   public async getAggregatedSpending(
@@ -167,26 +210,32 @@ export class TransactionService {
     endDate: Date
   ): Promise<{ subcategoryId: number; total: number }[]> {
 
-    const transactions = await this.prismaService.transaction.findMany({
-      where: { 
-        userId, 
-        groupId: null, 
-        date: { 
-          gte: startDate, 
-          lte: endDate 
-        },
-        type: { not: 'TRANSFER' }
+    try {
+
+      const transactions = await this.prismaService.transaction.findMany({
+        where: {
+          userId,
+          groupId: null,
+          date: {
+            gte: startDate,
+            lte: endDate
+          },
+          type: { not: 'TRANSFER' }
+        }
+      });
+
+      const map = new Map<number, number>();
+      for (const t of transactions) {
+        if (!t.subcategoryId) continue;
+        const id = t.subcategoryId;
+        map.set(id, (map.get(id) ?? 0) + Number(t.amount));
       }
-    });
 
-    const map = new Map<number, number>();
-    for (const t of transactions) {
-      if (!t.subcategoryId) continue;
-      const id = t.subcategoryId;
-      map.set(id, (map.get(id) ?? 0) + Number(t.amount));
+      return Array.from(map.entries()).map(([subcategoryId, total]) => ({ subcategoryId, total }));
+
+    } catch (error) {
+      throw new HttpException(error.message, error.status || 500);
     }
-
-    return Array.from(map.entries()).map(([subcategoryId, total]) => ({ subcategoryId, total }));
   }
 
   public async getAggregatedByYear(
@@ -232,4 +281,3 @@ export class TransactionService {
     );
   }
 }
- 

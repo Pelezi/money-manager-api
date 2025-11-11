@@ -12,8 +12,8 @@ export class TransactionData {
     @ApiProperty({ description: 'User ID', example: 1 })
     public readonly userId: number;
 
-    @ApiProperty({ description: 'Subcategory ID', example: 1 })
-    public readonly subcategoryId: number;
+    @ApiProperty({ description: 'Subcategory ID', example: 1, required: false })
+    public readonly subcategoryId?: number;
 
     @ApiProperty({ description: 'Transaction title', example: 'Grocery shopping' })
     public readonly title: string;
