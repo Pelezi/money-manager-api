@@ -174,13 +174,13 @@ export class AccountService {
             });
 
             if (!groupMember) {
-                throw new ForbiddenException('You are not a member of this group');
+                throw new ForbiddenException('Você não é membro deste grupo');
             }
         }
 
         const account = await this.prismaService.account.create({
             data: {
-                userId,
+                userId: data.userId || userId,
                 name: data.name,
                 type: data.type,
                 groupId: data.groupId

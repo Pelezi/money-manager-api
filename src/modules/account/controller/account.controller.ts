@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query, UseGuards, Request } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query, UseGuards, Request, HttpException } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiParam, ApiQuery } from '@nestjs/swagger';
 
 import { AuthenticatedRequest, RestrictedGuard } from '../../common';
@@ -91,7 +91,10 @@ export class AccountController {
     @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Usuário não é membro do grupo especificado' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
     public async create(@Body() data: AccountInput, @Request() req: AuthenticatedRequest): Promise<AccountData> {
-        const userId = req?.user?.userId || 1;
+        const userId = req?.user?.userId;
+        if (!userId) {
+            throw new HttpException('Usuário não autenticado', HttpStatus.UNAUTHORIZED);
+        }
         return this.accountService.create(userId, data);
     }
 

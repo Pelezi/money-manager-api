@@ -13,4 +13,7 @@ export class AccountInput {
 
     @ApiProperty({ description: 'Initial balance', example: 0.00, required: false })
     public readonly initialBalance?: number;
+
+    @ApiProperty({ description: 'User ID', example: 1, required: false })
+    public readonly userId?: number;
 }
