@@ -104,7 +104,7 @@ export class TransactionService {
       userId: b.account?.userId || userId,
       subcategoryId: null,
       title: 'Atualização de Saldo',
-      amount: b.amount,
+      amount: Number(b.amount),
       description: null,
       date: b.date,
       type: CategoryType.UPDATE,
@@ -116,7 +116,8 @@ export class TransactionService {
 
     combined.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    return combined;
+  // Convert combined raw entities to TransactionData DTOs (handles Decimal -> number)
+  return combined.map(t => new TransactionData(t));
   }
 
   public async findById(id: number): Promise<TransactionData> {
@@ -129,8 +130,8 @@ export class TransactionService {
         }
       });
 
-      if (!transaction) throw new HttpException('Transação não encontrada', 404);
-      return transaction;
+  if (!transaction) throw new HttpException('Transação não encontrada', 404);
+  return new TransactionData(transaction);
     } catch (error) {
       throw new HttpException(error.message, error.status || 500);
     }

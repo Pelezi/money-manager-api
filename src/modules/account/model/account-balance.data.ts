@@ -21,7 +21,7 @@ export class AccountBalanceData {
     public constructor(entity: AccountBalance) {
         this.id = entity.id;
         this.accountId = entity.accountId;
-        this.amount = entity.amount;
+        this.amount = Number(entity.amount);
         this.date = entity.date;
         this.createdAt = entity.createdAt;
     }

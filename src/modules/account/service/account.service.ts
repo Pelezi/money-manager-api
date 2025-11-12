@@ -1,5 +1,5 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { AccountBalance, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../common';
 import { AccountData, AccountInput, AccountBalanceData, AccountBalanceInput } from '../model';
@@ -125,7 +125,7 @@ export class AccountService {
             orderBy: { date: 'desc' }
         });
 
-        const baselineAmount = lastBalance ? Number(lastBalance.amount) : 0;
+    const baselineAmount = lastBalance ? Number(lastBalance.amount) : 0;
         const baselineDate = lastBalance ? lastBalance.date : new Date(0);
 
         // Build transaction filter: any tx that references this account (either as from or to)
@@ -173,8 +173,8 @@ export class AccountService {
 
         const currentAmount = baselineAmount + net;
 
-        // Build a synthetic AccountBalance-like object to return via AccountBalanceData
-        const resultEntity: AccountBalance = {
+        // Build a synthetic AccountBalance-like object and return the DTO
+        const resultEntity: any = {
             id: lastBalance ? lastBalance.id : 0,
             accountId,
             amount: currentAmount,
@@ -182,7 +182,7 @@ export class AccountService {
             createdAt: lastBalance ? lastBalance.createdAt : new Date()
         };
 
-        return resultEntity;
+        return new AccountBalanceData(resultEntity);
     }
 
     /**
@@ -205,7 +205,7 @@ export class AccountService {
             orderBy: { date: 'desc' }
         });
 
-        return balances;
+        return balances.map(b => new AccountBalanceData(b));
     }
 
     /**
@@ -251,7 +251,7 @@ export class AccountService {
             });
         }
 
-        return account;
+    return new AccountData(account);
     }
 
     /**
@@ -313,7 +313,7 @@ export class AccountService {
             data: updateData
         });
 
-        return account;
+        return new AccountData(account);
     }
 
     /**
@@ -515,8 +515,7 @@ export class AccountService {
                 date: data.date || new Date()
             }
         });
-
-        return balance;
+        return new AccountBalanceData(balance);
     }
 
     /**
@@ -559,8 +558,7 @@ export class AccountService {
             where: { id },
             data: updateData
         });
-
-        return balance;
+        return new AccountBalanceData(balance);
     }
 
     /**

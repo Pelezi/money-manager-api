@@ -59,7 +59,7 @@ export class TransactionData {
         this.userId = entity.userId;
         this.subcategoryId = entity.subcategoryId;
         this.title = entity.title;
-        this.amount = entity.amount;
+        this.amount = Number(entity.amount);
         this.description = entity.description;
         this.date = entity.date;
         this.type = entity.type;
