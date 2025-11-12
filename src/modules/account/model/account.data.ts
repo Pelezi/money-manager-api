@@ -16,7 +16,7 @@ export class AccountData {
     };
 
     @ApiProperty({ description: 'Group ID', example: 1, required: false })
-    public readonly groupId?: number;
+    public readonly groupId?: number | null;
 
     @ApiProperty({ description: 'Account name', example: 'Dinheiro' })
     public readonly name: string;

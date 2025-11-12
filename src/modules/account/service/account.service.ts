@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { AccountBalance, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../common';
 import { AccountData, AccountInput, AccountBalanceData, AccountBalanceInput } from '../model';
@@ -120,16 +120,69 @@ export class AccountService {
             throw new NotFoundException('Account not found');
         }
 
-        const balance = await this.prismaService.accountBalance.findFirst({
+        const lastBalance = await this.prismaService.accountBalance.findFirst({
             where: { accountId },
             orderBy: { date: 'desc' }
         });
 
-        if (!balance) {
-            return null;
+        const baselineAmount = lastBalance ? Number(lastBalance.amount) : 0;
+        const baselineDate = lastBalance ? lastBalance.date : new Date(0);
+
+        // Build transaction filter: any tx that references this account (either as from or to)
+        const conditions: Prisma.TransactionWhereInput[] = [
+            { date: { gt: baselineDate } },
+            {
+                OR: [
+                    { accountId },
+                    { toAccountId: accountId }
+                ]
+            }
+        ];
+
+        // Scope transactions to the same ownership as the account (group or personal)
+        if (account.groupId !== undefined && account.groupId !== null) {
+            conditions.push({ groupId: account.groupId });
+        } else {
+            conditions.push({ userId: account.userId, groupId: null });
         }
 
-        return new AccountBalanceData(balance);
+        const txWhere: Prisma.TransactionWhereInput = { AND: conditions };
+
+        const transactions = await this.prismaService.transaction.findMany({
+            where: txWhere,
+            orderBy: { date: 'asc' }
+        });
+
+        // Apply transactions to the baseline
+        let net = 0;
+        let latestTxDate: Date | null = null;
+        for (const t of transactions) {
+            latestTxDate = t.date > (latestTxDate ?? new Date(0)) ? t.date : latestTxDate;
+            if (t.type === 'INCOME') {
+                // Income always increases the destination account (accountId)
+                if (t.accountId === accountId) net += Number(t.amount);
+            } else if (t.type === 'EXPENSE') {
+                // Expense decreases the origin account
+                if (t.accountId === accountId) net -= Number(t.amount);
+            } else if (t.type === 'TRANSFER') {
+                // Transfer: subtract from origin, add to destination
+                if (t.accountId === accountId) net -= Number(t.amount);
+                if (t.toAccountId === accountId) net += Number(t.amount);
+            }
+        }
+
+        const currentAmount = baselineAmount + net;
+
+        // Build a synthetic AccountBalance-like object to return via AccountBalanceData
+        const resultEntity: AccountBalance = {
+            id: lastBalance ? lastBalance.id : 0,
+            accountId,
+            amount: currentAmount,
+            date: latestTxDate ?? (lastBalance ? lastBalance.date : new Date()),
+            createdAt: lastBalance ? lastBalance.createdAt : new Date()
+        };
+
+        return resultEntity;
     }
 
     /**
@@ -152,7 +205,7 @@ export class AccountService {
             orderBy: { date: 'desc' }
         });
 
-        return balances.map(balance => new AccountBalanceData(balance));
+        return balances;
     }
 
     /**
@@ -198,7 +251,7 @@ export class AccountService {
             });
         }
 
-        return new AccountData(account);
+        return account;
     }
 
     /**
@@ -260,7 +313,7 @@ export class AccountService {
             data: updateData
         });
 
-        return new AccountData(account);
+        return account;
     }
 
     /**
@@ -335,7 +388,7 @@ export class AccountService {
             }
         });
 
-        return new AccountBalanceData(balance);
+        return balance;
     }
 
     /**
@@ -379,7 +432,7 @@ export class AccountService {
             data: updateData
         });
 
-        return new AccountBalanceData(balance);
+        return balance;
     }
 
     /**

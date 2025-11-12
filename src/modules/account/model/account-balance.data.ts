@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { AccountBalance } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
 
 export class AccountBalanceData {
 
@@ -22,7 +21,7 @@ export class AccountBalanceData {
     public constructor(entity: AccountBalance) {
         this.id = entity.id;
         this.accountId = entity.accountId;
-        this.amount = (entity.amount as Decimal).toNumber();
+        this.amount = entity.amount;
         this.date = entity.date;
         this.createdAt = entity.createdAt;
     }

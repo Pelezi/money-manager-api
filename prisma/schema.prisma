@@ -295,7 +295,7 @@ enum AccountType {
 model AccountBalance {
   id        Int      @id @default(autoincrement())
   accountId Int
-  amount    Decimal  @db.Decimal(10, 2)
+  amount    Int
   date      DateTime @default(now())
   createdAt DateTime @default(now())
 
