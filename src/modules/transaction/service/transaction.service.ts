@@ -73,7 +73,50 @@ export class TransactionService {
       orderBy: { date: 'desc' }
     });
 
-    return transactions.map(t => new TransactionData(t));
+    // Also fetch account balance updates in the same period and ownership scope
+    const balanceWhere: any = {};
+    if (startDate || endDate) {
+      balanceWhere.date = {} as any;
+      if (startDate) balanceWhere.date.gte = startDate;
+      if (endDate) balanceWhere.date.lte = endDate;
+    }
+
+    // Account ownership constraint: if groupId provided, filter by account.groupId, otherwise by account.userId and account.groupId null
+    if (groupId !== undefined) {
+      balanceWhere.account = { groupId };
+    } else {
+      balanceWhere.account = { userId, groupId: null };
+    }
+
+    if (accountId) {
+      balanceWhere.accountId = accountId;
+    }
+
+    const balances = await this.prismaService.accountBalance.findMany({
+      where: balanceWhere,
+      include: { account: true },
+      orderBy: { date: 'desc' }
+    });
+
+    const syntheticFromBalances = balances.map(b => ({
+      id: -(b.id),
+      accountId: b.accountId,
+      userId: b.account?.userId || userId,
+      subcategoryId: null,
+      title: 'Atualização de Saldo',
+      amount: b.amount,
+      description: null,
+      date: b.date,
+      type: CategoryType.UPDATE,
+      toAccountId: null,
+      createdAt: b.createdAt,
+    }));
+
+    const combined = [...transactions, ...syntheticFromBalances];
+
+    combined.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    return combined;
   }
 
   public async findById(id: number): Promise<TransactionData> {
@@ -87,7 +130,7 @@ export class TransactionService {
       });
 
       if (!transaction) throw new HttpException('Transação não encontrada', 404);
-      return new TransactionData(transaction);
+      return transaction;
     } catch (error) {
       throw new HttpException(error.message, error.status || 500);
     }

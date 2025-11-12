@@ -103,7 +103,7 @@ model Transaction {
   subcategoryId Int?
   accountId     Int
   title         String?
-  amount        Decimal      @db.Decimal(10, 2)
+  amount        Int
   description   String?
   date          DateTime
   type          CategoryType @default(EXPENSE)
@@ -130,6 +130,7 @@ enum CategoryType {
   EXPENSE
   INCOME
   TRANSFER
+  UPDATE
 }
 
 model Group {

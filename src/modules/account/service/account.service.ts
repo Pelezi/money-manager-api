@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { AccountBalance, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../common';
@@ -40,8 +40,8 @@ export class AccountService {
         }
 
         // Can manage all group accounts or can manage own accounts (if owner)
-        return member.role.canManageGroupAccounts || 
-               (member.role.canManageOwnAccounts && account.userId === userId);
+        return member.role.canManageGroupAccounts ||
+            (member.role.canManageOwnAccounts && account.userId === userId);
     }
 
     /**
@@ -67,7 +67,7 @@ export class AccountService {
         const accounts = await this.prismaService.account.findMany({
             include: {
                 user: {
-                    select: {firstName: true, lastName: true}
+                    select: { firstName: true, lastName: true }
                 },
             },
             where,
@@ -89,7 +89,7 @@ export class AccountService {
     public async findById(id: number, userId: number): Promise<AccountData | null> {
 
         const account = await this.prismaService.account.findFirst({
-            where: { 
+            where: {
                 id,
                 OR: [
                     { userId },
@@ -113,11 +113,11 @@ export class AccountService {
      * @returns The most recent balance or null
      */
     public async getCurrentBalance(accountId: number, userId: number): Promise<AccountBalanceData | null> {
-        
+
         // Verify user has access to this account
         const account = await this.findById(accountId, userId);
         if (!account) {
-            throw new NotFoundException('Account not found');
+            throw new HttpException('Account not found', HttpStatus.NOT_FOUND);
         }
 
         const lastBalance = await this.prismaService.accountBalance.findFirst({
@@ -193,11 +193,11 @@ export class AccountService {
      * @returns List of account balances
      */
     public async getBalanceHistory(accountId: number, userId: number): Promise<AccountBalanceData[]> {
-        
+
         // Verify user has access to this account
         const account = await this.findById(accountId, userId);
         if (!account) {
-            throw new NotFoundException('Account not found');
+            throw new HttpException('Account not found', HttpStatus.NOT_FOUND);
         }
 
         const balances = await this.prismaService.accountBalance.findMany({
@@ -227,7 +227,7 @@ export class AccountService {
             });
 
             if (!groupMember) {
-                throw new ForbiddenException('Você não é membro deste grupo');
+                throw new HttpException('Você não é membro deste grupo', HttpStatus.UNAUTHORIZED);
             }
         }
 
@@ -265,7 +265,7 @@ export class AccountService {
     public async update(id: number, userId: number, data: Partial<AccountInput>): Promise<AccountData> {
 
         const existingAccount = await this.prismaService.account.findFirst({
-            where: { 
+            where: {
                 id,
                 OR: [
                     { userId },
@@ -275,13 +275,13 @@ export class AccountService {
         });
 
         if (!existingAccount) {
-            throw new NotFoundException('Account not found');
+            throw new HttpException('Account not found', HttpStatus.NOT_FOUND);
         }
 
         // Check if user has permission to manage this account
         const canManage = await this.canManageAccount(userId, existingAccount);
         if (!canManage) {
-            throw new ForbiddenException('You do not have permission to manage this account');
+            throw new HttpException('You do not have permission to manage this account', HttpStatus.UNAUTHORIZED);
         }
 
         // If groupId is being changed, verify user is member of new group
@@ -294,16 +294,16 @@ export class AccountService {
             });
 
             if (!groupMember) {
-                throw new ForbiddenException('You are not a member of this group');
+                throw new HttpException('You are not a member of this group', HttpStatus.UNAUTHORIZED);
             }
         }
 
         const updateData: Prisma.AccountUpdateInput = {};
-        
+
         if (data.name !== undefined) updateData.name = data.name;
         if (data.type !== undefined) updateData.type = data.type;
         if (data.groupId !== undefined) {
-            updateData.group = data.groupId 
+            updateData.group = data.groupId
                 ? { connect: { id: data.groupId } }
                 : { disconnect: true };
         }
@@ -323,31 +323,159 @@ export class AccountService {
      * @param userId User ID
      * @returns void
      */
-    public async delete(id: number, userId: number): Promise<void> {
+    // NOTE: delete is implemented further below with an optional `force` flag
 
-        const account = await this.prismaService.account.findFirst({
-            where: { 
-                id,
-                OR: [
-                    { userId },
-                    { group: { members: { some: { userId } } } }
+    /**
+     * Count transactions referencing an account
+     */
+    public async countTransactions(accountId: number, userId: number): Promise<number> {
+        const account = await this.findById(accountId, userId);
+        if (!account) throw new HttpException('Account not found', HttpStatus.NOT_FOUND);
+
+        // Build ownership constraint
+        const ownershipConstraint: any = account.groupId !== undefined && account.groupId !== null
+            ? { groupId: account.groupId }
+            : { userId: account.userId, groupId: null };
+
+        const count = await this.prismaService.transaction.count({
+            where: {
+                AND: [
+                    {
+                        OR: [
+                            { accountId },
+                            { toAccountId: accountId }
+                        ]
+                    },
+                    ownershipConstraint
                 ]
             }
         });
 
+        return count;
+    }
+
+    /**
+     * Move all transactions referencing accountId to targetAccountId
+     */
+    public async moveTransactions(accountId: number, targetAccountId: number, userId: number): Promise<{ movedOrigin: number; movedDestination: number }> {
+        const source = await this.findById(accountId, userId);
+        const target = await this.findById(targetAccountId, userId);
+
+        if (!source || !target) throw new HttpException('Conta de origem ou destino não encontrada', HttpStatus.NOT_FOUND);
+
+        // Ensure same ownership (same group or same personal owner)
+        const sourceGroup = source.groupId ?? null;
+        const targetGroup = target.groupId ?? null;
+
+        if (sourceGroup !== targetGroup) {
+            throw new HttpException('As contas devem pertencer ao mesmo grupo', HttpStatus.BAD_REQUEST);
+        }
+
+        // Permission checks
+        if (sourceGroup !== null) {
+            // Group accounts: verify user is member and has proper role permissions
+            const member = await this.prismaService.groupMember.findFirst({
+                where: { groupId: sourceGroup, userId },
+                include: { role: true }
+            });
+            if (!member) {
+                throw new HttpException('Você não é membro deste grupo', HttpStatus.UNAUTHORIZED);
+            }
+
+            // If can manage all group accounts, allow
+            if (member.role.canManageGroupAccounts) {
+                // allowed
+            } else if (member.role.canManageOwnAccounts) {
+                // can manage only own accounts: ensure both source and target belong to the user
+                if (source.userId !== userId || target.userId !== userId) {
+                    throw new HttpException('Você só pode mover transações entre suas próprias contas no grupo', HttpStatus.UNAUTHORIZED);
+                }
+            } else {
+                throw new HttpException('Você não tem permissão para gerenciar contas deste grupo', HttpStatus.UNAUTHORIZED);
+            }
+        } else {
+            // Personal accounts: user must be the owner of both accounts
+            if (source.userId !== userId || target.userId !== userId) {
+                throw new HttpException('Você não é o proprietário destas contas', HttpStatus.UNAUTHORIZED);
+            }
+        }
+
+        // Ownership constraint
+        const ownershipConstraint: any = source.groupId !== undefined && source.groupId !== null
+            ? { groupId: source.groupId }
+            : { userId: source.userId, groupId: null };
+
+        const [movedOrigin, movedDestination] = await this.prismaService.$transaction([
+            this.prismaService.transaction.updateMany({
+                where: {
+                    AND: [
+                        { accountId },
+                        ownershipConstraint
+                    ]
+                },
+                data: { accountId: targetAccountId }
+            }),
+            this.prismaService.transaction.updateMany({
+                where: {
+                    AND: [
+                        { toAccountId: accountId },
+                        ownershipConstraint
+                    ]
+                },
+                data: { toAccountId: targetAccountId }
+            })
+        ]);
+
+        return { movedOrigin: movedOrigin.count, movedDestination: movedDestination.count };
+    }
+
+    /**
+     * Delete account optionally forcing removal of related transactions and balances
+     */
+    public async delete(id: number, userId: number, options?: { force?: boolean }): Promise<void> {
+
+        const account = await this.prismaService.account.findFirst({ where: { id } });
         if (!account) {
-            throw new NotFoundException('Account not found');
+            throw new HttpException('Account not found', HttpStatus.NOT_FOUND);
         }
 
         // Check if user has permission to manage this account
         const canManage = await this.canManageAccount(userId, account);
         if (!canManage) {
-            throw new ForbiddenException('You do not have permission to manage this account');
+            throw new HttpException('You do not have permission to manage this account', HttpStatus.UNAUTHORIZED);
         }
 
-        await this.prismaService.account.delete({
-            where: { id }
-        });
+        const txCount = await this.countTransactions(id, userId);
+        if (txCount > 0 && !options?.force) {
+            // Signal to caller that there are transactions attached
+            throw new HttpException('Account has linked transactions', HttpStatus.CONFLICT);
+        }
+
+        // Proceed with deletion inside a transaction: delete transactions, balances and the account
+        const ownershipConstraint: any = account.groupId !== undefined && account.groupId !== null
+            ? { groupId: account.groupId }
+            : { userId: account.userId, groupId: null };
+
+        await this.prismaService.$transaction([
+            // delete transactions referencing this account
+            this.prismaService.transaction.deleteMany({
+                where: {
+                    AND: [
+                        {
+                            OR: [
+                                { accountId: id },
+                                { toAccountId: id }
+                            ]
+                        },
+                        ownershipConstraint
+                    ]
+                }
+            }),
+            // delete balances
+            this.prismaService.accountBalance.deleteMany({ where: { accountId: id } }),
+            // delete account
+            this.prismaService.account.delete({ where: { id } })
+        ]);
     }
 
     /**
@@ -362,7 +490,7 @@ export class AccountService {
         // Verify user has access to this account
         const accountData = await this.findById(data.accountId, userId);
         if (!accountData) {
-            throw new NotFoundException('Account not found');
+            throw new HttpException('Account not found', HttpStatus.NOT_FOUND);
         }
 
         // Get full account with relations to check permissions
@@ -371,13 +499,13 @@ export class AccountService {
         });
 
         if (!account) {
-            throw new NotFoundException('Account not found');
+            throw new HttpException('Account not found', HttpStatus.NOT_FOUND);
         }
 
         // Check if user has permission to manage this account
         const canManage = await this.canManageAccount(userId, account);
         if (!canManage) {
-            throw new ForbiddenException('You do not have permission to manage this account');
+            throw new HttpException('You do not have permission to manage this account', HttpStatus.UNAUTHORIZED);
         }
 
         const balance = await this.prismaService.accountBalance.create({
@@ -407,23 +535,23 @@ export class AccountService {
         });
 
         if (!existingBalance) {
-            throw new NotFoundException('Balance not found');
+            throw new HttpException('Balance not found', HttpStatus.NOT_FOUND);
         }
 
         // Verify user has access to this account
         const accountData = await this.findById(existingBalance.accountId, userId);
         if (!accountData) {
-            throw new NotFoundException('Account not found');
+            throw new HttpException('Account not found', HttpStatus.NOT_FOUND);
         }
 
         // Check if user has permission to manage this account
         const canManage = await this.canManageAccount(userId, existingBalance.account);
         if (!canManage) {
-            throw new ForbiddenException('You do not have permission to manage this account');
+            throw new HttpException('You do not have permission to manage this account', HttpStatus.UNAUTHORIZED);
         }
 
         const updateData: Prisma.AccountBalanceUpdateInput = {};
-        
+
         if (data.amount !== undefined) updateData.amount = data.amount;
         if (data.date !== undefined) updateData.date = data.date;
 
@@ -450,19 +578,19 @@ export class AccountService {
         });
 
         if (!balance) {
-            throw new NotFoundException('Balance not found');
+            throw new HttpException('Balance not found', HttpStatus.NOT_FOUND);
         }
 
         // Verify user has access to this account
         const accountData = await this.findById(balance.accountId, userId);
         if (!accountData) {
-            throw new NotFoundException('Account not found');
+            throw new HttpException('Account not found', HttpStatus.NOT_FOUND);
         }
 
         // Check if user has permission to manage this account
         const canManage = await this.canManageAccount(userId, balance.account);
         if (!canManage) {
-            throw new ForbiddenException('You do not have permission to manage this account');
+            throw new HttpException('You do not have permission to manage this account', HttpStatus.UNAUTHORIZED);
         }
 
         await this.prismaService.accountBalance.delete({

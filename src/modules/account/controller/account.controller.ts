@@ -81,6 +81,18 @@ export class AccountController {
         return this.accountService.getBalanceHistory(parseInt(id), userId);
     }
 
+    @Get(':id/transactions/count')
+    @ApiParam({ name: 'id', description: 'ID único da conta' })
+    @ApiOperation({
+        summary: 'Contar transações vinculadas a uma conta',
+        description: 'Retorna a quantidade de transações que referenciam a conta (origem ou destino).'
+    })
+    public async countTransactions(@Param('id') id: string, @Request() req: AuthenticatedRequest): Promise<{ count: number }> {
+        const userId = req?.user?.userId || 1;
+        const count = await this.accountService.countTransactions(parseInt(id), userId);
+        return { count };
+    }
+
     @Post()
     @ApiOperation({ 
         summary: 'Criar uma nova conta',
@@ -127,9 +139,28 @@ export class AccountController {
     @ApiResponse({ status: HttpStatus.NO_CONTENT, description: 'Conta deletada com sucesso' })
     @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Conta não encontrada' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
-    public async delete(@Param('id') id: string, @Request() req: AuthenticatedRequest): Promise<void> {
+    public async delete(@Param('id') id: string, @Query('force') force: string, @Request() req: AuthenticatedRequest): Promise<void> {
         const userId = req?.user?.userId || 1;
-        await this.accountService.delete(parseInt(id), userId);
+        const forceFlag = force === 'true';
+        return this.accountService.delete(parseInt(id), userId, { force: forceFlag });
+    }
+
+    @Post(':id/transactions/move')
+    @ApiParam({ name: 'id', description: 'ID único da conta que terá as transações movidas' })
+    @ApiOperation({
+        summary: 'Mover transações de uma conta para outra',
+        description: 'Move todas as transações (origem e destino) que referenciam a conta para a conta destino informada.'
+    })
+    public async moveTransactions(
+        @Param('id') id: string,
+        @Body() body: { targetAccountId: number },
+        @Request() req: AuthenticatedRequest
+    ): Promise<{ movedOrigin: number; movedDestination: number }> {
+        const userId = req?.user?.userId;
+        if (!userId) {
+            throw new HttpException('Usuário não autenticado', HttpStatus.UNAUTHORIZED);
+        }
+        return this.accountService.moveTransactions(parseInt(id), body.targetAccountId, userId);
     }
 
     @Post('balances')

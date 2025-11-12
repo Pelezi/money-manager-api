@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { CategoryType } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
 
 export class TransactionData {
     @ApiProperty({ description: 'Account ID', example: 1, required: true })
@@ -13,16 +12,16 @@ export class TransactionData {
     public readonly userId: number;
 
     @ApiProperty({ description: 'Subcategory ID', example: 1, required: false })
-    public readonly subcategoryId?: number;
+    public readonly subcategoryId?: number | null;
 
     @ApiProperty({ description: 'Transaction title', example: 'Grocery shopping' })
-    public readonly title: string;
+    public readonly title?: string | null;
 
     @ApiProperty({ description: 'Transaction amount', example: 50.00 })
     public readonly amount: number;
 
     @ApiProperty({ description: 'Transaction description', example: 'Weekly groceries at Whole Foods', required: false })
-    public readonly description?: string;
+    public readonly description?: string | null;
 
     @ApiProperty({ description: 'Transaction date', example: '2024-01-15T00:00:00Z' })
     public readonly date: Date;
@@ -31,7 +30,7 @@ export class TransactionData {
     public readonly type: CategoryType;
 
     @ApiProperty({ description: 'Destination account ID for transfers', example: 2, required: false })
-    public readonly toAccountId?: number;
+    public readonly toAccountId?: number | null;
 
     @ApiProperty({ description: 'Created at', example: '2024-01-01T00:00:00Z' })
     public readonly createdAt: Date;
@@ -52,7 +51,7 @@ export class TransactionData {
             name: string;
             type: CategoryType;
         };
-    };
+    } | null;
 
     public constructor(entity: any) {
         this.accountId = entity.accountId;
@@ -60,11 +59,11 @@ export class TransactionData {
         this.userId = entity.userId;
         this.subcategoryId = entity.subcategoryId;
         this.title = entity.title;
-        this.amount = (entity.amount as Decimal).toNumber();
-        this.description = entity.description || undefined;
+        this.amount = entity.amount;
+        this.description = entity.description;
         this.date = entity.date;
         this.type = entity.type;
-        this.toAccountId = entity.toAccountId || undefined;
+        this.toAccountId = entity.toAccountId;
         this.createdAt = entity.createdAt;
         
         // Include user data if available
