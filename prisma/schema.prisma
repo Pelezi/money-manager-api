@@ -103,7 +103,7 @@ model Transaction {
   subcategoryId Int?
   accountId     Int
   title         String?
-  amount        Int
+  amount        Decimal  @db.Decimal(10, 2)
   description   String?
   date          DateTime
   type          CategoryType @default(EXPENSE)
@@ -296,7 +296,7 @@ enum AccountType {
 model AccountBalance {
   id        Int      @id @default(autoincrement())
   accountId Int
-  amount    Int
+  amount    Decimal  @db.Decimal(10, 2)
   date      DateTime @default(now())
   createdAt DateTime @default(now())
 
