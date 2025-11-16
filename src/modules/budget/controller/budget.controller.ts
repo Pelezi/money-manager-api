@@ -25,12 +25,14 @@ export class BudgetController {
     @ApiQuery({ name: 'year', required: false, description: 'Filtrar por ano (ex: 2024)' })
     @ApiQuery({ name: 'month', required: false, description: 'Filtrar por mês (1-12, onde 1=Janeiro, 12=Dezembro)' })
     @ApiQuery({ name: 'type', required: false, enum: ['EXPENSE', 'INCOME'], description: 'Filtrar por tipo de orçamento (EXPENSE=Despesas, INCOME=Receitas)' })
+    @ApiQuery({ name: 'groupId', required: false, description: 'Filtrar por ID do grupo' })
     @ApiResponse({ status: HttpStatus.OK, isArray: true, type: BudgetData, description: 'Lista de orçamentos retornada com sucesso' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
     public async find(
         @Query('year') year?: string,
         @Query('month') month?: string,
         @Query('type') type?: CategoryType,
+        @Query('groupId') groupId?: string,
         @Request() req?: AuthenticatedRequest
     ): Promise<BudgetData[]> {
         const userId = req?.user?.userId || 1;
@@ -38,7 +40,8 @@ export class BudgetController {
             userId,
             year ? parseInt(year) : undefined,
             type,
-            month ? parseInt(month) : undefined
+            month ? parseInt(month) : undefined,
+            groupId ? parseInt(groupId) : undefined
         );
     }
 
@@ -51,6 +54,7 @@ export class BudgetController {
     @ApiQuery({ name: 'month', required: false, description: 'Mês para comparação (1-12, opcional)' })
     @ApiQuery({ name: 'subcategoryId', required: false, description: 'ID da subcategoria para comparação específica (opcional)' })
     @ApiQuery({ name: 'type', required: false, enum: ['EXPENSE', 'INCOME'], description: 'Filtrar por tipo (EXPENSE=Despesas, INCOME=Receitas)' })
+    @ApiQuery({ name: 'groupId', required: false, description: 'Filtrar por ID do grupo' })
     @ApiResponse({ status: HttpStatus.OK, description: 'Comparação retornada com sucesso com campos: budgeted (valor orçado), actual (valor real), difference (diferença)' })
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Parâmetro year obrigatório não fornecido' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
@@ -59,6 +63,7 @@ export class BudgetController {
         @Query('month') month?: string,
         @Query('subcategoryId') subcategoryId?: string,
         @Query('type') type?: CategoryType,
+        @Query('groupId') groupId?: string,
         @Request() req?: AuthenticatedRequest
     ): Promise<{ budgeted: number; actual: number; difference: number }> {
         const userId = req?.user?.userId || 1;
@@ -67,7 +72,8 @@ export class BudgetController {
             parseInt(year),
             month ? parseInt(month) : undefined,
             subcategoryId ? parseInt(subcategoryId) : undefined,
-            type
+            type,
+            groupId ? parseInt(groupId) : undefined
         );
     }
 

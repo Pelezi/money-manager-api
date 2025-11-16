@@ -14,12 +14,23 @@ export class CategoryService {
      * Find all categories for a user
      *
      * @param userId User ID
+     * @param groupId Optional group filter
      * @returns A category list
      */
-    public async findByUser(userId: number): Promise<CategoryData[]> {
+    public async findByUser(userId: number, groupId?: number): Promise<CategoryData[]> {
+
+        const where: any = {};
+        
+        // If groupId is provided, filter by group (accessible to all group members)
+        // Otherwise, filter by userId (personal data)
+        if (groupId !== undefined) {
+            where.groupId = groupId;
+        } else {
+            where.userId = userId;
+        }
 
         const categories = await this.prismaService.category.findMany({
-            where: { userId }
+            where
         });
 
         return categories.map(category => new CategoryData(category));
@@ -57,6 +68,7 @@ export class CategoryService {
         const category = await this.prismaService.category.create({
             data: {
                 userId,
+                groupId: data.groupId,
                 name: data.name,
                 description: data.description,
                 type: data.type
@@ -111,6 +123,41 @@ export class CategoryService {
         await this.prismaService.category.delete({
             where: { id }
         });
+    }
+
+    /**
+     * Bulk create categories with subcategories
+     *
+     * @param userId User ID
+     * @param categories Array of categories with their subcategories
+     * @returns Created categories
+     */
+    public async bulkCreateWithSubcategories(
+        userId: number,
+        categories: Array<{ name: string; type: 'EXPENSE' | 'INCOME'; subcategories: string[] }>
+    ): Promise<CategoryData[]> {
+        const createdCategories: CategoryData[] = [];
+
+        for (const categoryData of categories) {
+            const category = await this.prismaService.category.create({
+                data: {
+                    userId,
+                    name: categoryData.name,
+                    type: categoryData.type,
+                    subcategories: {
+                        create: categoryData.subcategories.map(subName => ({
+                            userId,
+                            name: subName,
+                            type: categoryData.type
+                        }))
+                    }
+                }
+            });
+
+            createdCategories.push(new CategoryData(category));
+        }
+
+        return createdCategories;
     }
 
 }

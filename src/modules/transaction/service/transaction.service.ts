@@ -15,6 +15,7 @@ export class TransactionService {
      * Find all transactions for a user
      *
      * @param userId User ID
+     * @param groupId Optional group filter
      * @param subcategoryId Optional subcategory filter
      * @param startDate Optional start date filter
      * @param endDate Optional end date filter
@@ -23,13 +24,23 @@ export class TransactionService {
      */
     public async findByUser(
         userId: number,
+        groupId?: number,
         subcategoryId?: number,
         startDate?: Date,
         endDate?: Date,
         type?: CategoryType
     ): Promise<TransactionData[]> {
 
-        const where: Prisma.TransactionWhereInput = { userId };
+        const where: Prisma.TransactionWhereInput = {};
+
+        // If groupId is provided, filter by group (accessible to all group members)
+        // Otherwise, filter by userId (personal data) and ensure groupId is null
+        if (groupId !== undefined) {
+            where.groupId = groupId;
+        } else {
+            where.userId = userId;
+            where.groupId = null;
+        }
 
         if (subcategoryId) {
             where.subcategoryId = subcategoryId;
@@ -51,6 +62,20 @@ export class TransactionService {
 
         const transactions = await this.prismaService.transaction.findMany({
             where,
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true
+                    }
+                },
+                subcategory: {
+                    include: {
+                        category: true
+                    }
+                }
+            },
             orderBy: {
                 date: 'desc'
             }
@@ -69,7 +94,21 @@ export class TransactionService {
     public async findById(id: number, userId: number): Promise<TransactionData | null> {
 
         const transaction = await this.prismaService.transaction.findFirst({
-            where: { id, userId }
+            where: { id, userId },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true
+                    }
+                },
+                subcategory: {
+                    include: {
+                        category: true
+                    }
+                }
+            }
         });
 
         if (!transaction) {
@@ -91,12 +130,27 @@ export class TransactionService {
         const transaction = await this.prismaService.transaction.create({
             data: {
                 userId,
+                groupId: data.groupId,
                 subcategoryId: data.subcategoryId,
                 title: data.title,
                 amount: data.amount,
                 description: data.description,
                 date: data.date + (data.time ? `T${data.time}Z` : 'T00:00:00Z'),
                 type: data.type
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true
+                    }
+                },
+                subcategory: {
+                    include: {
+                        category: true
+                    }
+                }
             }
         });
 
@@ -123,7 +177,21 @@ export class TransactionService {
 
         const updated = await this.prismaService.transaction.update({
             where: { id },
-            data
+            data,
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true
+                    }
+                },
+                subcategory: {
+                    include: {
+                        category: true
+                    }
+                }
+            }
         });
 
         return new TransactionData(updated);
@@ -167,6 +235,7 @@ export class TransactionService {
         const transactions = await this.prismaService.transaction.findMany({
             where: {
                 userId,
+                groupId: null,
                 date: {
                     gte: startDate,
                     lte: endDate
@@ -194,32 +263,53 @@ export class TransactionService {
      *
      * @param userId User ID
      * @param year Year to filter transactions
+     * @param groupId Optional group filter
      * @returns Aggregated transaction data grouped by subcategory, month, year, and type
      */
     public async getAggregatedByYear(
         userId: number,
-        year: number
+        year: number,
+        groupId?: number
     ): Promise<TransactionAggregated[]> {
 
         const startDate = new Date(year, 0, 1);
         const endDate = new Date(year + 1, 0, 1);
 
+        const where: Prisma.TransactionWhereInput = {
+            date: {
+                gte: startDate,
+                lt: endDate
+            }
+        };
+
+        // If groupId is provided, filter by group (accessible to all group members)
+        // Otherwise, filter by userId (personal data) and ensure groupId is null
+        if (groupId !== undefined) {
+            where.groupId = groupId;
+        } else {
+            where.userId = userId;
+            where.groupId = null;
+        }
+
         const transactions = await this.prismaService.transaction.findMany({
-            where: {
-                userId,
-                date: {
-                    gte: startDate,
-                    lt: endDate
+            where,
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true
+                    }
                 }
             }
         });
 
-        // Group by subcategoryId, month, year, and type
+        // Group by subcategoryId, month, year, and type (and optionally userId for group analytics)
         const aggregated = transactions.reduce((acc, transaction) => {
             const date = new Date(transaction.date);
             const month = date.getMonth() + 1; // 1-12
             const year = date.getFullYear();
-            const key = `${transaction.subcategoryId}-${month}-${year}-${transaction.type}`;
+            const key = `${transaction.subcategoryId}-${month}-${year}-${transaction.type}${groupId ? `-${transaction.userId}` : ''}`;
             
             if (!acc[key]) {
                 acc[key] = {
@@ -228,7 +318,9 @@ export class TransactionService {
                     count: 0,
                     month,
                     year,
-                    type: transaction.type
+                    type: transaction.type,
+                    userId: groupId ? transaction.userId : undefined,
+                    user: groupId ? transaction.user : undefined
                 };
             }
             
@@ -236,7 +328,7 @@ export class TransactionService {
             acc[key].count += 1;
             
             return acc;
-        }, {} as Record<string, { subcategoryId: number; total: number; count: number; month: number; year: number; type: CategoryType }>);
+        }, {} as Record<string, { subcategoryId: number; total: number; count: number; month: number; year: number; type: CategoryType; userId?: number; user?: any }>);
 
         return Object.values(aggregated).map(data => new TransactionAggregated(data));
     }

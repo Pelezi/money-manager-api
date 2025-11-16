@@ -23,16 +23,19 @@ export class SubcategoryController {
         description: 'Retorna todas as subcategorias do usuário autenticado, com opção de filtrar por categoria. Subcategorias são os itens específicos de despesas ou receitas dentro de uma categoria maior. Por exemplo, dentro da categoria "Moradia", você pode ter subcategorias como "Aluguel", "Condomínio", "Energia", "Água". Use o parâmetro categoryId para filtrar subcategorias de uma categoria específica, facilitando a visualização organizada de seus itens financeiros.'
     })
     @ApiQuery({ name: 'categoryId', required: false, description: 'ID da categoria para filtrar subcategorias' })
+    @ApiQuery({ name: 'groupId', required: false, description: 'Filtrar por ID do grupo' })
     @ApiResponse({ status: HttpStatus.OK, isArray: true, type: SubcategoryData, description: 'Lista de subcategorias retornada com sucesso' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
     public async find(
         @Query('categoryId') categoryId?: string,
+        @Query('groupId') groupId?: string,
         @Request() req?: AuthenticatedRequest
     ): Promise<SubcategoryData[]> {
         const userId = req?.user?.userId || 1;
         return this.subcategoryService.findByUser(
             userId,
-            categoryId ? parseInt(categoryId) : undefined
+            categoryId ? parseInt(categoryId) : undefined,
+            groupId ? parseInt(groupId) : undefined
         );
     }
 

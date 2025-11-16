@@ -16,11 +16,20 @@ export class SubcategoryService {
      *
      * @param userId User ID
      * @param categoryId Optional category filter
+     * @param groupId Optional group filter
      * @returns A subcategory list
      */
-    public async findByUser(userId: number, categoryId?: number): Promise<SubcategoryData[]> {
+    public async findByUser(userId: number, categoryId?: number, groupId?: number): Promise<SubcategoryData[]> {
 
-        const where: Prisma.SubcategoryWhereInput = { userId };
+        const where: Prisma.SubcategoryWhereInput = {};
+
+        // If groupId is provided, filter by group (accessible to all group members)
+        // Otherwise, filter by userId (personal data)
+        if (groupId !== undefined) {
+            where.groupId = groupId;
+        } else {
+            where.userId = userId;
+        }
 
         if (categoryId) {
             where.categoryId = categoryId;
@@ -68,7 +77,8 @@ export class SubcategoryService {
                 categoryId: data.categoryId,
                 name: data.name,
                 description: data.description,
-                type: data.type
+                type: data.type,
+                groupId: data.groupId
             }
         });
 

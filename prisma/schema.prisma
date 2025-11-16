@@ -8,23 +8,31 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  firstName String
-  lastName  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  email       String   @unique
+  password    String
+  firstName   String
+  lastName    String
+  firstAccess Boolean  @default(true)
+  locale      String   @default("en")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  budgets       Budget[]
-  categories    Category[]
-  subcategories Subcategory[]
-  transactions  Transaction[]
+  budgets           Budget[]
+  categories        Category[]
+  subcategories     Subcategory[]
+  transactions      Transaction[]
+  ownedGroups       Group[]            @relation("GroupOwner")
+  groupMemberships  GroupMember[]
+  receivedInvitations GroupInvitation[] @relation("UserInvitations")
+  sentInvitations   GroupInvitation[]  @relation("SentInvitations")
+  notifications     Notification[]
 }
 
 model Category {
   id          Int          @id @default(autoincrement())
   userId      Int
+  groupId     Int?
   name        String
   description String?
   type        CategoryType @default(EXPENSE)
@@ -32,15 +40,18 @@ model Category {
   updatedAt   DateTime     @updatedAt
 
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group         Group?        @relation(fields: [groupId], references: [id], onDelete: Cascade)
   subcategories Subcategory[]
 
   @@index([userId])
+  @@index([groupId])
   @@index([type])
 }
 
 model Subcategory {
   id          Int          @id @default(autoincrement())
   userId      Int
+  groupId     Int?
   categoryId  Int
   name        String
   description String?
@@ -49,11 +60,13 @@ model Subcategory {
   updatedAt   DateTime     @updatedAt
 
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group        Group?        @relation(fields: [groupId], references: [id], onDelete: Cascade)
   category     Category      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   budgets      Budget[]
   transactions Transaction[]
 
   @@index([userId])
+  @@index([groupId])
   @@index([categoryId])
   @@index([type])
 }
@@ -61,6 +74,7 @@ model Subcategory {
 model Budget {
   id            Int          @id @default(autoincrement())
   userId        Int
+  groupId       Int?
   amount        Decimal      @db.Decimal(10, 2)
   type          CategoryType @default(EXPENSE)
   month         Int
@@ -70,9 +84,11 @@ model Budget {
   updatedAt     DateTime     @updatedAt
 
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group       Group?      @relation(fields: [groupId], references: [id], onDelete: Cascade)
   subcategory Subcategory @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([groupId])
   @@index([subcategoryId])
   @@index([type])
 }
@@ -80,6 +96,7 @@ model Budget {
 model Transaction {
   id            Int          @id @default(autoincrement())
   userId        Int
+  groupId       Int?
   subcategoryId Int
   title         String
   amount        Decimal      @db.Decimal(10, 2)
@@ -90,9 +107,11 @@ model Transaction {
   updatedAt     DateTime     @updatedAt
 
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group       Group?      @relation(fields: [groupId], references: [id], onDelete: Cascade)
   subcategory Subcategory @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([groupId])
   @@index([subcategoryId])
   @@index([date])
   @@index([type])
@@ -101,4 +120,133 @@ model Transaction {
 enum CategoryType {
   EXPENSE
   INCOME
+}
+
+model Group {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  ownerId     Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner         User              @relation("GroupOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members       GroupMember[]
+  roles         GroupRole[]
+  budgets       Budget[]
+  categories    Category[]
+  subcategories Subcategory[]
+  transactions  Transaction[]
+  invitations   GroupInvitation[]
+
+  @@index([ownerId])
+}
+
+model GroupRole {
+  id          Int      @id @default(autoincrement())
+  groupId     Int
+  name        String
+  description String?
+  
+  // Permission flags
+  canViewTransactions    Boolean @default(true)
+  canManageTransactions  Boolean @default(false)
+  canViewCategories      Boolean @default(true)
+  canManageCategories    Boolean @default(false)
+  canViewSubcategories   Boolean @default(true)
+  canManageSubcategories Boolean @default(false)
+  canViewBudgets         Boolean @default(true)
+  canManageBudgets       Boolean @default(false)
+  canManageGroup         Boolean @default(false) // Manage members, roles, and group settings
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  group       Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  members     GroupMember[]
+  invitations GroupInvitation[]
+
+  @@unique([groupId, name])
+  @@index([groupId])
+}
+
+model GroupMember {
+  id        Int      @id @default(autoincrement())
+  groupId   Int
+  userId    Int
+  roleId    Int
+  joinedAt  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role  GroupRole @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+  @@index([roleId])
+}
+
+model GroupInvitation {
+  id        Int      @id @default(autoincrement())
+  groupId   Int
+  userId    Int      // User being invited
+  invitedBy Int      // User who sent the invitation
+  roleId    Int
+  status    InvitationStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group     Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user      User      @relation("UserInvitations", fields: [userId], references: [id], onDelete: Cascade)
+  inviter   User      @relation("SentInvitations", fields: [invitedBy], references: [id], onDelete: Cascade)
+  role      GroupRole @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+  @@index([status])
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+model Notification {
+  id        Int              @id @default(autoincrement())
+  userId    Int              // User who receives the notification
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  metadata  Json?            // Additional data (groupId, transactionId, etc.)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  GROUP_INVITATION
+  GROUP_MEMBER_JOINED
+  GROUP_MEMBER_LEFT
+  TRANSACTION_CREATED
+  TRANSACTION_UPDATED
+  TRANSACTION_DELETED
+  CATEGORY_CREATED
+  CATEGORY_UPDATED
+  CATEGORY_DELETED
+  SUBCATEGORY_CREATED
+  SUBCATEGORY_UPDATED
+  SUBCATEGORY_DELETED
+  BUDGET_CREATED
+  BUDGET_UPDATED
+  BUDGET_DELETED
+  GROUP_UPDATED
 }

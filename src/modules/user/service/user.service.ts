@@ -91,8 +91,8 @@ export class UserService {
         }
 
         const token = jwt.sign(
-            { 
-                userId: user.id, 
+            {
+                userId: user.id,
                 email: user.email,
                 role: Role.RESTRICTED
             },
@@ -104,6 +104,70 @@ export class UserService {
             token,
             user: new UserData(user)
         };
+    }
+
+    /**
+     * Mark user's first access as complete
+     *
+     * @param userId User ID
+     * @returns Updated user data
+     */
+    public async completeFirstAccess(userId: number): Promise<UserData> {
+        const user = await this.prismaService.user.update({
+            where: { id: userId },
+            data: { firstAccess: false }
+        });
+
+        return new UserData(user);
+    }
+
+    /**
+     * Update user's locale preference
+     *
+     * @param userId User ID
+     * @param locale Locale code (e.g., 'en', 'pt')
+     * @returns Updated user data
+     */
+    public async updateLocale(userId: number, locale: string): Promise<UserData> {
+        const user = await this.prismaService.user.update({
+            where: { id: userId },
+            data: { locale }
+        });
+
+        return new UserData(user);
+    }
+
+    /**
+     * Search users by email
+     *
+     * @param email Email search term
+     * @returns List of users matching the search
+     */
+    public async searchByEmailOrName(query: string): Promise<UserData[]> {
+        const users = await this.prismaService.user.findMany({
+            where: {
+                OR: [
+                    {
+                        email: {
+                            contains: query,
+                            mode: 'insensitive'
+                        }
+                    },
+                    {
+                        firstName: {
+                            contains: query,
+                            mode: 'insensitive'
+                        }
+                    }
+                ]
+            },
+            take: 10,
+            orderBy: {
+                email: 'asc'
+            }
+        });
+
+        return users.map(user => new UserData(user));
     }
 
 }
