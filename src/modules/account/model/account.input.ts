@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { AccountType } from '@prisma/client';
+import { AccountType, DebitMethod } from '@prisma/client';
 
 export class AccountInput {
     @ApiProperty({ description: 'Account name', example: 'Dinheiro' })
@@ -16,4 +16,16 @@ export class AccountInput {
 
     @ApiProperty({ description: 'User ID', example: 1, required: false })
     public readonly userId?: number;
+
+    @ApiProperty({ description: 'Subcategory ID (used for PREPAID accounts)', example: 1, required: false })
+    public readonly subcategoryId?: number;
+
+    @ApiProperty({ description: 'Credit due day (1-31) for CREDIT accounts', example: 5, required: false })
+    public readonly creditDueDay?: number;
+
+    @ApiProperty({ description: 'Credit closing day (1-31) for CREDIT accounts', example: 25, required: false })
+    public readonly creditClosingDay?: number;
+
+    @ApiProperty({ description: 'Debit method for CREDIT accounts', enum: ['INVOICE','PER_PURCHASE'], example: 'INVOICE', required: false })
+    public readonly debitMethod?: DebitMethod;
 }

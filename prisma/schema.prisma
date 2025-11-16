@@ -67,6 +67,8 @@ model Subcategory {
   category     Category      @relation(fields: [categoryId], references: [id], onDelete: NoAction)
   budgets      Budget[]
   transactions Transaction[]
+  // Accounts that reference this subcategory (used by PREPAID accounts)
+  accounts Account[]
 
   @@index([userId])
   @@index([groupId])
@@ -273,17 +275,24 @@ model Account {
   groupId     Int?
   name        String
   type        AccountType
+  // Optional link to a subcategory (used for prepaid accounts)
+  subcategoryId Int?
+  creditDueDay Int?
+  creditClosingDay Int?
+  debitMethod DebitMethod?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
   user     User             @relation(fields: [userId], references: [id], onDelete: NoAction)
   group    Group?           @relation(fields: [groupId], references: [id], onDelete: NoAction)
+  subcategory Subcategory?  @relation(fields: [subcategoryId], references: [id], onDelete: NoAction)
   balances AccountBalance[]
   transactions Transaction[]
   transactionsTo Transaction[] @relation("TransactionToAccount")
 
   @@index([userId])
   @@index([groupId])
+  @@index([subcategoryId])
   @@index([type])
 }
 
@@ -291,6 +300,11 @@ enum AccountType {
   CREDIT
   CASH
   PREPAID
+}
+
+enum DebitMethod {
+  INVOICE
+  PER_PURCHASE
 }
 
 model AccountBalance {

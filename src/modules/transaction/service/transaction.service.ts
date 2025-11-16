@@ -302,28 +302,96 @@ export class TransactionService {
     } else {
       where.userId = userId;
       where.groupId = null;
-      where.type = { not: 'TRANSFER' };
     }
 
     const transactions = await this.prismaService.transaction.findMany({ where });
 
+    const accountWhere: any = {};
+    if (groupId !== undefined) {
+      accountWhere.groupId = groupId;
+    } else {
+      accountWhere.userId = userId;
+      accountWhere.groupId = null;
+    }
+    const accounts = await this.prismaService.account.findMany({ where: accountWhere });
+    const accountMap = new Map<number, { type: string; subcategoryId?: number | null; debitMethod?: string | null }>();
+    for (const account of accounts) {
+      accountMap.set(account.id, { type: account.type, subcategoryId: account.subcategoryId, debitMethod: account.debitMethod ?? null });
+    }
+
     const acc: Record<string, { subcategoryId: number; total: number; count: number; month: number; year: number; type: CategoryType }> = {};
     for (const t of transactions) {
-      if (!t.subcategoryId) continue;
       const d = new Date(t.date);
-      const key = `${t.subcategoryId}-${d.getMonth() + 1}-${d.getFullYear()}-${t.type}`;
-      if (!acc[key]) {
-        acc[key] = {
-          subcategoryId: t.subcategoryId,
-          total: 0,
-          count: 0,
-          month: d.getMonth() + 1,
-          year: d.getFullYear(),
-          type: t.type,
-        };
+
+      // Non-transfer transactions: aggregate by their subcategory
+      if (t.type !== 'TRANSFER') {
+        // If this is an expense coming from a CREDIT account with debitMethod=INVOICE, skip it
+        if (t.type === 'EXPENSE' && t.accountId) {
+          const src = accountMap.get(t.accountId);
+          if (src && src.type === 'CREDIT') {
+            continue;
+          }
+        }
+
+        if (!t.subcategoryId) continue;
+        const key = `${t.subcategoryId}-${d.getMonth() + 1}-${d.getFullYear()}-${t.type}`;
+        if (!acc[key]) {
+          acc[key] = {
+            subcategoryId: t.subcategoryId,
+            total: 0,
+            count: 0,
+            month: d.getMonth() + 1,
+            year: d.getFullYear(),
+            type: t.type,
+          };
+        }
+        acc[key].total += Number(t.amount);
+        acc[key].count += 1;
+        continue;
       }
-      acc[key].total += Number(t.amount);
-      acc[key].count += 1;
+
+      // For TRANSFER transactions: if the destination account is a PREPAID account,
+      // treat this transfer as an EXPENSE attributed to the prepaid account's configured subcategory.
+      if (t.toAccountId) {
+        const dest = accountMap.get(t.toAccountId);
+        if (dest) {
+          // Transfers to PREPAID accounts -> expense attributed to that account's subcategory
+          if (dest.type === 'PREPAID' && dest.subcategoryId) {
+            const subId = dest.subcategoryId as number;
+            const key = `${subId}-${d.getMonth() + 1}-${d.getFullYear()}-EXPENSE`;
+            if (!acc[key]) {
+              acc[key] = {
+                subcategoryId: subId,
+                total: 0,
+                count: 0,
+                month: d.getMonth() + 1,
+                year: d.getFullYear(),
+                type: 'EXPENSE',
+              };
+            }
+            acc[key].total += Number(t.amount);
+            acc[key].count += 1;
+          }
+
+          // Transfers to CREDIT accounts with invoice billing -> treat as expense to the account's subcategory
+          if (dest.type === 'CREDIT' && dest.subcategoryId) {
+            const subId = dest.subcategoryId as number;
+            const key = `${subId}-${d.getMonth() + 1}-${d.getFullYear()}-EXPENSE`;
+            if (!acc[key]) {
+              acc[key] = {
+                subcategoryId: subId,
+                total: 0,
+                count: 0,
+                month: d.getMonth() + 1,
+                year: d.getFullYear(),
+                type: 'EXPENSE',
+              };
+            }
+            acc[key].total += Number(t.amount);
+            acc[key].count += 1;
+          }
+        }
+      }
     }
 
     return Object.values(acc).map(({ subcategoryId, total, count, month, year, type }) =>

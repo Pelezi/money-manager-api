@@ -52,31 +52,36 @@ export class AccountService {
      * @returns An account list
      */
     public async findByUser(userId: number, groupId?: number): Promise<AccountData[]> {
+        try {
 
-        const where: Prisma.AccountWhereInput = {};
+            const where: Prisma.AccountWhereInput = {};
 
-        // If groupId is provided, filter by group (accessible to all group members)
-        // Otherwise, filter by userId AND groupId null (personal data only)
-        if (groupId !== undefined) {
-            where.groupId = groupId;
-        } else {
-            where.userId = userId;
-            where.groupId = null;  // Ensure we only get personal accounts, not group accounts
-        }
+            // If groupId is provided, filter by group (accessible to all group members)
+            // Otherwise, filter by userId AND groupId null (personal data only)
+            if (groupId !== undefined) {
+                where.groupId = groupId;
+            } else {
+                where.userId = userId;
+                where.groupId = null;  // Ensure we only get personal accounts, not group accounts
+            }
 
-        const accounts = await this.prismaService.account.findMany({
-            include: {
-                user: {
-                    select: { firstName: true, lastName: true }
+            const accounts = await this.prismaService.account.findMany({
+                include: {
+                    user: {
+                        select: { firstName: true, lastName: true }
+                    },
                 },
-            },
-            where,
-            orderBy: [
-                { createdAt: 'desc' }
-            ]
-        });
+                where,
+                orderBy: [
+                    { createdAt: 'desc' }
+                ]
+            });
 
-        return accounts.map(account => new AccountData(account));
+            return accounts.map(account => new AccountData(account));
+
+        } catch (error) {
+            throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -125,7 +130,7 @@ export class AccountService {
             orderBy: { date: 'desc' }
         });
 
-    const baselineAmount = lastBalance ? Number(lastBalance.amount) : 0;
+        const baselineAmount = lastBalance ? Number(lastBalance.amount) : 0;
         const baselineDate = lastBalance ? lastBalance.date : new Date(0);
 
         // Build transaction filter: any tx that references this account (either as from or to)
@@ -236,8 +241,13 @@ export class AccountService {
                 userId: data.userId || userId,
                 name: data.name,
                 type: data.type,
-                groupId: data.groupId
-            }
+                groupId: data.groupId,
+                // optional fields (cast to any to avoid generated type mismatch until prisma client is regenerated)
+                subcategoryId: data.subcategoryId,
+                creditDueDay: data.creditDueDay,
+                creditClosingDay: data.creditClosingDay,
+                debitMethod: data.debitMethod
+            } as any
         });
 
         // Create initial balance if provided
@@ -251,7 +261,7 @@ export class AccountService {
             });
         }
 
-    return new AccountData(account);
+        return new AccountData(account);
     }
 
     /**
@@ -307,6 +317,14 @@ export class AccountService {
                 ? { connect: { id: data.groupId } }
                 : { disconnect: true };
         }
+        if (data.subcategoryId !== undefined) {
+            updateData.subcategory = (data.subcategoryId)
+                ? { connect: { id: data.subcategoryId } }
+                : { disconnect: true };
+        }
+        if (data.creditDueDay !== undefined) updateData.creditDueDay = data.creditDueDay;
+        if (data.creditClosingDay !== undefined) updateData.creditClosingDay = data.creditClosingDay;
+        if (data.debitMethod !== undefined) updateData.debitMethod = data.debitMethod;
 
         const account = await this.prismaService.account.update({
             where: { id },

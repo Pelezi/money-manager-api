@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Account, AccountType } from '@prisma/client';
+import { Account, AccountType, DebitMethod } from '@prisma/client';
 
 export class AccountData {
 
@@ -24,6 +24,18 @@ export class AccountData {
     @ApiProperty({ description: 'Account type', enum: ['CREDIT', 'CASH', 'PREPAID'], example: 'CASH' })
     public readonly type: AccountType;
 
+    @ApiProperty({ description: 'Subcategory ID (for PREPAID accounts)', example: 1, required: false })
+    public readonly subcategoryId?: number;
+
+    @ApiProperty({ description: 'Credit due day (1-31) for CREDIT accounts', example: 5, required: false })
+    public readonly creditDueDay?: number;
+
+    @ApiProperty({ description: 'Credit closing day (1-31) for CREDIT accounts', example: 25, required: false })
+    public readonly creditClosingDay?: number;
+
+    @ApiProperty({ description: 'Debit method for CREDIT accounts', enum: ['INVOICE','PER_PURCHASE'], required: false })
+    public readonly debitMethod?: DebitMethod;
+
     @ApiProperty({ description: 'Created at', example: '2024-01-01T00:00:00Z' })
     public readonly createdAt: Date;
 
@@ -42,6 +54,10 @@ export class AccountData {
             firstName: entity.user.firstName,
             lastName: entity.user.lastName
         } : undefined;
+        this.subcategoryId = entity.subcategoryId ?? undefined;
+        this.creditDueDay = entity.creditDueDay ?? undefined;
+        this.creditClosingDay = entity.creditClosingDay ?? undefined;
+        this.debitMethod = entity.debitMethod ?? undefined;
     }
 
 }
