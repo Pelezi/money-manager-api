@@ -580,6 +580,28 @@ export class AccountService {
     }
 
     /**
+     * Get a single balance entry by id
+     *
+     * @param id Balance ID
+     * @param userId User ID
+     * @returns AccountBalanceData
+     */
+    public async getBalanceById(id: number, userId: number): Promise<AccountBalanceData> {
+        const balance = await this.prismaService.accountBalance.findUnique({ where: { id }, include: { account: true } });
+        if (!balance) {
+            throw new HttpException('Balance not found', HttpStatus.NOT_FOUND);
+        }
+
+        // Verify user has access to this account (ownership or group membership)
+        const accountData = await this.findById(balance.accountId, userId);
+        if (!accountData) {
+            throw new HttpException('Account not found', HttpStatus.NOT_FOUND);
+        }
+
+        return new AccountBalanceData(balance);
+    }
+
+    /**
      * Delete a balance entry
      *
      * @param id Balance ID

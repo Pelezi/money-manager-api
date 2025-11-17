@@ -177,6 +177,20 @@ export class AccountController {
         return this.accountService.addBalance(userId, data);
     }
 
+    @Get('balances/:id')
+    @ApiParam({ name: 'id', description: 'ID único do registro de saldo' })
+    @ApiOperation({
+        summary: 'Obter um registro de saldo por ID',
+        description: 'Retorna um registro de saldo específico pelo seu ID.'
+    })
+    @ApiResponse({ status: HttpStatus.OK, type: AccountBalanceData, description: 'Saldo retornado com sucesso' })
+    @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Saldo não encontrado' })
+    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
+    public async getBalanceById(@Param('id') id: string, @Request() req: AuthenticatedRequest): Promise<AccountBalanceData> {
+        const userId = req?.user?.userId || 1;
+        return this.accountService.getBalanceById(parseInt(id), userId);
+    }
+
     @Put('balances/:id')
     @ApiParam({ name: 'id', description: 'ID único do registro de saldo' })
     @ApiOperation({ 
