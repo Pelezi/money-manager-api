@@ -119,8 +119,7 @@ export class TransactionController {
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Dados inválidos fornecidos' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
     public async update(@Param('id') id: string, @Body() input: TransactionInput, @Request() req: AuthenticatedRequest): Promise<TransactionData> {
-        const userId = req?.user?.userId || 1;
-        return this.transactionService.update(parseInt(id), userId, input);
+        return this.transactionService.update(parseInt(id), input);
     }
 
     @Delete(':id')

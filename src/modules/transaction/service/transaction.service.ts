@@ -198,9 +198,9 @@ export class TransactionService {
     }
   }
 
-  public async update(id: number, userId: number, data: Partial<TransactionInput>): Promise<TransactionData> {
+  public async update(id: number, data: Partial<TransactionInput>): Promise<TransactionData> {
     try {
-      const transaction = await this.prismaService.transaction.findFirst({ where: { id, userId } });
+      const transaction = await this.prismaService.transaction.findFirst({ where: { id } });
       if (!transaction) {
         throw new HttpException('Transaction not found', 404);
       }
