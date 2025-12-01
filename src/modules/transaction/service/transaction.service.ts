@@ -11,6 +11,28 @@ export class TransactionService {
     private readonly prismaService: PrismaService
   ) { }
 
+  /**
+   * Calculate timezone offset in milliseconds for a given timezone and date
+   * @param timezone IANA timezone string (e.g., 'America/Sao_Paulo')
+   * @param date The date to calculate offset for
+   * @returns Offset in milliseconds
+   */
+  private getTimezoneOffset(timezone: string, date: Date): number {
+    try {
+      // Get the date string in the target timezone
+      const tzDateStr = date.toLocaleString('en-US', { timeZone: timezone });
+      const tzDate = new Date(tzDateStr);
+      // Get the date string in UTC
+      const utcDateStr = date.toLocaleString('en-US', { timeZone: 'UTC' });
+      const utcDate = new Date(utcDateStr);
+      // The difference is the offset
+      return tzDate.getTime() - utcDate.getTime();
+    } catch (error) {
+      // If timezone is invalid, return 0 (treat as UTC)
+      return 0;
+    }
+  }
+
   public async findByUser(
     userId: number,
     groupId?: number,
@@ -54,10 +76,36 @@ export class TransactionService {
       ];
     }
 
+    let adjustedStartDate: Date | undefined;
+    let adjustedEndDate: Date | undefined;
+
     if (startDate || endDate) {
+      // Fetch user's timezone to properly interpret date boundaries
+      const user = await this.prismaService.user.findUnique({
+        where: { id: userId },
+        select: { timezone: true }
+      });
+      const userTimezone = user?.timezone || 'UTC';
+
+      if (startDate) {
+        // Convert start of day in user's timezone to UTC
+        const startDateStr = startDate.toISOString().split('T')[0]; // YYYY-MM-DD
+        const startInUserTz = new Date(`${startDateStr}T00:00:00`);
+        // Calculate offset: parse as if it were in the user's timezone
+        const offsetMs = this.getTimezoneOffset(userTimezone, startInUserTz);
+        adjustedStartDate = new Date(startInUserTz.getTime() - offsetMs);
+      }
+      if (endDate) {
+        // Convert end of day in user's timezone to UTC
+        const endDateStr = endDate.toISOString().split('T')[0]; // YYYY-MM-DD
+        const endInUserTz = new Date(`${endDateStr}T23:59:59.999`);
+        const offsetMs = this.getTimezoneOffset(userTimezone, endInUserTz);
+        adjustedEndDate = new Date(endInUserTz.getTime() - offsetMs);
+      }
+
       where.date = {};
-      if (startDate) where.date.gte = startDate;
-      if (endDate) where.date.lte = endDate;
+      if (adjustedStartDate) where.date.gte = adjustedStartDate;
+      if (adjustedEndDate) where.date.lte = adjustedEndDate;
     }
 
     if (type) {
@@ -75,10 +123,11 @@ export class TransactionService {
 
     // Also fetch account balance updates in the same period and ownership scope
     const balanceWhere: any = {};
-    if (startDate || endDate) {
-      balanceWhere.date = {} as any;
-      if (startDate) balanceWhere.date.gte = startDate;
-      if (endDate) balanceWhere.date.lte = endDate;
+    if (adjustedStartDate || adjustedEndDate) {
+      // Reuse the same timezone-adjusted date range from the main where clause
+      balanceWhere.date = {};
+      if (adjustedStartDate) balanceWhere.date.gte = adjustedStartDate;
+      if (adjustedEndDate) balanceWhere.date.lte = adjustedEndDate;
     }
 
     // Account ownership constraint: if groupId provided, filter by account.groupId, otherwise by account.userId and account.groupId null
