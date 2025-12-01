@@ -21,11 +21,11 @@ export class UserData {
     @ApiProperty({ description: 'First access flag', example: true })
     public readonly firstAccess: boolean;
 
-    @ApiProperty({ description: 'User locale preference', example: 'en' })
-    public readonly locale: string;
-
     @ApiProperty({ description: 'User timezone', example: 'America/Sao_Paulo' })
     public readonly timezone: string;
+
+    @ApiProperty({ description: 'Default homepage preference', example: 'personal', required: false })
+    public readonly defaultHomepage?: string;
 
     @ApiProperty({ description: 'Created at', example: '2024-01-01T00:00:00Z' })
     public readonly createdAt: Date;
@@ -37,8 +37,8 @@ export class UserData {
         this.lastName = entity.lastName;
         this.phoneNumber = entity.phoneNumber || undefined;
         this.firstAccess = entity.firstAccess;
-        this.locale = entity.locale;
         this.timezone = entity.timezone;
+        this.defaultHomepage = entity.defaultHomepage || undefined;
         this.createdAt = entity.createdAt;
     }
 

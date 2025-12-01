@@ -122,35 +122,19 @@ export class UserService {
     }
 
     /**
-     * Update user's locale preference
-     *
-     * @param userId User ID
-     * @param locale Locale code (e.g., 'en', 'pt')
-     * @returns Updated user data
-     */
-    public async updateLocale(userId: number, locale: string): Promise<UserData> {
-        const user = await this.prismaService.user.update({
-            where: { id: userId },
-            data: { locale }
-        });
-
-        return new UserData(user);
-    }
-
-    /**
      * Update user profile
      *
      * @param userId User ID
      * @param data Profile data to update
      * @returns Updated user data
      */
-    public async updateProfile(userId: number, data: { timezone?: string; locale?: string; phoneNumber?: string }): Promise<UserData> {
+    public async updateProfile(userId: number, data: { timezone?: string; phoneNumber?: string; defaultHomepage?: string }): Promise<UserData> {
         const user = await this.prismaService.user.update({
             where: { id: userId },
             data: {
                 ...(data.timezone && { timezone: data.timezone }),
-                ...(data.locale && { locale: data.locale }),
-                ...(data.phoneNumber !== undefined && { phoneNumber: data.phoneNumber })
+                ...(data.phoneNumber !== undefined && { phoneNumber: data.phoneNumber }),
+                ...(data.defaultHomepage !== undefined && { defaultHomepage: data.defaultHomepage })
             }
         });
 

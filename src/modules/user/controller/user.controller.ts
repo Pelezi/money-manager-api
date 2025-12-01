@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpStatus, Post, Patch, UseGuards, UnauthorizedException, Request, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Post, Patch, UseGuards, Request, Query, HttpException } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiQuery } from '@nestjs/swagger';
 
 import { RestrictedGuard } from '../../common';
@@ -38,7 +38,7 @@ export class UserController {
         try {
             return await this.userService.login(input);
         } catch (error) {
-            throw new UnauthorizedException('Credenciais inválidas');
+            throw new HttpException(error.message, HttpStatus.UNAUTHORIZED);
         }
     }
 
@@ -77,35 +77,18 @@ export class UserController {
         return this.userService.completeFirstAccess(userId);
     }
 
-    @Patch('locale')
-    @UseGuards(RestrictedGuard)
-    @ApiBearerAuth()
-    @ApiOperation({ 
-        summary: 'Atualizar preferência de idioma do usuário',
-        description: 'Atualiza o idioma preferido do usuário. Aceita valores como "en" para inglês ou "pt" para português.'
-    })
-    @ApiResponse({ status: HttpStatus.OK, type: UserData, description: 'Idioma atualizado com sucesso' })
-    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
-    public async updateLocale(
-        @Request() req: any,
-        @Body() body: { locale: string }
-    ): Promise<UserData> {
-        const userId = req.user.userId;
-        return this.userService.updateLocale(userId, body.locale);
-    }
-
     @Patch('profile')
     @UseGuards(RestrictedGuard)
     @ApiBearerAuth()
     @ApiOperation({ 
         summary: 'Atualizar perfil do usuário',
-        description: 'Atualiza as informações do perfil do usuário, incluindo timezone e locale.'
+        description: 'Atualiza as informações do perfil do usuário, incluindo timezone e página inicial padrão.'
     })
     @ApiResponse({ status: HttpStatus.OK, type: UserData, description: 'Perfil atualizado com sucesso' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
     public async updateProfile(
         @Request() req: any,
-        @Body() body: { timezone?: string; locale?: string }
+        @Body() body: { timezone?: string; phoneNumber?: string; defaultHomepage?: string }
     ): Promise<UserData> {
         const userId = req.user.userId;
         return this.userService.updateProfile(userId, body);
