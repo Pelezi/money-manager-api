@@ -377,7 +377,7 @@ export class TransactionService {
         // If this is an expense coming from a CREDIT account with debitMethod=INVOICE, skip it
         if (t.type === 'EXPENSE' && t.accountId) {
           const src = accountMap.get(t.accountId);
-          if (src && src.type === 'CREDIT') {
+          if (src && (src.type === 'CREDIT' || src.type == 'PREPAID')) {
             continue;
           }
         }
