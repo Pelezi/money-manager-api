@@ -27,7 +27,7 @@ export class GroupService {
                     }
                 ]
             },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { name: 'asc' }
         });
 
         return groups.map(group => new GroupData(group));

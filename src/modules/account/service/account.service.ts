@@ -73,7 +73,7 @@ export class AccountService {
                 },
                 where,
                 orderBy: [
-                    { createdAt: 'desc' }
+                    { name: 'asc' }
                 ]
             });
 

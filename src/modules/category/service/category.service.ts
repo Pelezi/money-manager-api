@@ -31,7 +31,8 @@ export class CategoryService {
         }
 
         const categories = await this.prismaService.category.findMany({
-            where
+            where,
+            orderBy: { name: 'asc' }
         });
 
         return categories.map(category => new CategoryData(category));

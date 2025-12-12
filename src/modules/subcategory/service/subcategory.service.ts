@@ -37,7 +37,8 @@ export class SubcategoryService {
         }
 
         const subcategories = await this.prismaService.subcategory.findMany({
-            where
+            where,
+            orderBy: { name: 'asc' }
         });
 
         return subcategories.map(subcategory => new SubcategoryData(subcategory));

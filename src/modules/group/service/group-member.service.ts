@@ -40,7 +40,7 @@ export class GroupMemberService {
                 },
                 role: true
             },
-            orderBy: { joinedAt: 'asc' }
+            orderBy: { user: { firstName: 'asc' } }
         });
 
         return members.map(member => new GroupMemberData(member));

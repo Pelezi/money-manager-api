@@ -22,7 +22,9 @@ export class UserService {
      */
     public async find(): Promise<UserData[]> {
 
-        const users = await this.prismaService.user.findMany({});
+        const users = await this.prismaService.user.findMany({
+            orderBy: { firstName: 'asc' }
+        });
 
         return users.map(user => new UserData(user));
     }
@@ -167,7 +169,7 @@ export class UserService {
             },
             take: 10,
             orderBy: {
-                email: 'asc'
+                firstName: 'asc'
             }
         });
 
