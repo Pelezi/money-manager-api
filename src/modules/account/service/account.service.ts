@@ -325,6 +325,7 @@ export class AccountService {
         if (data.creditDueDay !== undefined) updateData.creditDueDay = data.creditDueDay;
         if (data.creditClosingDay !== undefined) updateData.creditClosingDay = data.creditClosingDay;
         if (data.debitMethod !== undefined) updateData.debitMethod = data.debitMethod;
+        if (data.budgetMonthBasis !== undefined) updateData.budgetMonthBasis = data.budgetMonthBasis;
 
         const account = await this.prismaService.account.update({
             where: { id },
