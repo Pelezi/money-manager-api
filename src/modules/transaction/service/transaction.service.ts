@@ -295,7 +295,19 @@ export class TransactionService {
     try {
       const transaction = await this.prismaService.transaction.findFirst({ where: { id, userId } });
       if (!transaction) {
-        throw new HttpException('Transaction not found', 404);
+        const groupTransaction = await this.prismaService.transaction.findFirst({ 
+          where: { 
+            id,
+            group: {
+              members: {
+                some: { userId }
+              }
+            }
+          }
+        });
+        if (!groupTransaction) {
+          throw new HttpException('Transaction not found', 404);
+        }
       }
       await this.prismaService.transaction.delete({ where: { id } });
     } catch (error) {
