@@ -429,9 +429,6 @@ export class TransactionService {
 
     const acc: Record<string, { subcategoryId: number; total: number; count: number; month: number; year: number; type: CategoryType }> = {};
     for (const t of transactions) {
-      if (t.id == 232) {
-        console.log('Processing transaction 232:', t);
-      }
       const d = new Date(t.date);
 
       // Non-transfer transactions: aggregate by their subcategory
@@ -465,11 +462,7 @@ export class TransactionService {
               account.creditDueDay &&
               account.creditDueDay !== null
               ) {
-                console.log('Calculating due date month for transaction', t.id);
-                console.log('Account creditClosingDay:', account.creditClosingDay, 'creditDueDay:', account.creditDueDay);
-                console.log('Transaction date:', d);
               const dueDateInfo = this.calculateDueDateMonth(d, account.creditClosingDay, account.creditDueDay);
-              console.log('Due date Info:', dueDateInfo);
               targetMonth = dueDateInfo.month;
               targetYear = dueDateInfo.year;
           }
