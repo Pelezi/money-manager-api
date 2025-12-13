@@ -280,6 +280,7 @@ model Account {
   creditDueDay Int?
   creditClosingDay Int?
   debitMethod DebitMethod?
+  budgetMonthBasis BudgetMonthBasis? @default(PURCHASE_DATE)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
@@ -305,6 +306,11 @@ enum AccountType {
 enum DebitMethod {
   INVOICE
   PER_PURCHASE
+}
+
+enum BudgetMonthBasis {
+  PURCHASE_DATE
+  DUE_DATE
 }
 
 model AccountBalance {

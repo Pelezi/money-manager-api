@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Account, AccountType, DebitMethod } from '@prisma/client';
+import { Account, AccountType, BudgetMonthBasis, DebitMethod } from '@prisma/client';
 
 export class AccountData {
 
@@ -36,6 +36,9 @@ export class AccountData {
     @ApiProperty({ description: 'Debit method for CREDIT accounts', enum: ['INVOICE','PER_PURCHASE'], required: false })
     public readonly debitMethod?: DebitMethod;
 
+    @ApiProperty({ description: 'Budget month basis for CREDIT accounts with PER_PURCHASE debit', enum: ['PURCHASE_DATE','DUE_DATE'], required: false })
+    public readonly budgetMonthBasis?: BudgetMonthBasis;
+
     @ApiProperty({ description: 'Created at', example: '2024-01-01T00:00:00Z' })
     public readonly createdAt: Date;
 
@@ -58,6 +61,7 @@ export class AccountData {
         this.creditDueDay = entity.creditDueDay ?? undefined;
         this.creditClosingDay = entity.creditClosingDay ?? undefined;
         this.debitMethod = entity.debitMethod ?? undefined;
+        this.budgetMonthBasis = entity.budgetMonthBasis ?? undefined;
     }
 
 }

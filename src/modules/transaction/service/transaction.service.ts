@@ -337,13 +337,58 @@ export class TransactionService {
     }
   }
 
+  /**
+   * Calculate the due date month for a credit card transaction based on closing and due days
+   * @param transactionDate The date of the transaction
+   * @param closingDay The closing day of the credit card (1-31)
+   * @param dueDay The due day of the credit card (1-31)
+   * @returns Object with month (1-12) and year
+   */
+  private calculateDueDateMonth(transactionDate: Date, closingDay: number, dueDay: number): { month: number; year: number } {
+    const txDate = new Date(transactionDate);
+    const txMonth = txDate.getMonth(); // 0-11
+    const txYear = txDate.getFullYear();
+    const txDay = txDate.getDate();
+
+    // Determine which billing cycle this transaction belongs to
+    let billingMonth = txMonth;
+    let billingYear = txYear;
+
+    // If transaction is after closing day, it goes to next month's bill
+    if (txDay > closingDay) {
+      billingMonth += 1;
+      if (billingMonth > 11) {
+        billingMonth = 0;
+        billingYear += 1;
+      }
+    }
+
+    // Now calculate the due date for this billing cycle
+    let dueMonth = billingMonth;
+    let dueYear = billingYear;
+
+    // Due date is typically in the next month after closing
+    if (dueDay < closingDay) {
+      dueMonth += 1;
+      if (dueMonth > 11) {
+        dueMonth = 0;
+        dueYear += 1;
+      }
+    }
+
+    return { month: dueMonth + 1, year: dueYear }; // Return 1-12 for month
+  }
+
   public async getAggregatedByYear(
     userId: number,
     year: number,
     groupId?: number
   ): Promise<TransactionAggregated[]> {
-    const startDate = new Date(year, 0, 1);
-    const endDate = new Date(year + 1, 0, 1);
+    // Expand query range to include 2 months before the year to capture
+    // transactions from previous year that may have due dates in the requested year
+    // (e.g., December purchases with January due dates)
+    const startDate = new Date(year - 1, 10, 1); // November of previous year
+    const endDate = new Date(year + 1, 0, 1); // End of requested year
 
     const where: Prisma.TransactionWhereInput = { date: { gte: startDate, lt: endDate } };
     if (groupId !== undefined) {
@@ -363,9 +408,23 @@ export class TransactionService {
       accountWhere.groupId = null;
     }
     const accounts = await this.prismaService.account.findMany({ where: accountWhere });
-    const accountMap = new Map<number, { type: string; subcategoryId?: number | null; debitMethod?: string | null }>();
+    const accountMap = new Map<number, { 
+      type: string; 
+      subcategoryId?: number | null; 
+      debitMethod?: string | null; 
+      budgetMonthBasis?: string | null;
+      creditDueDay?: number | null;
+      creditClosingDay?: number | null;
+    }>();
     for (const account of accounts) {
-      accountMap.set(account.id, { type: account.type, subcategoryId: account.subcategoryId, debitMethod: account.debitMethod ?? null });
+      accountMap.set(account.id, { 
+        type: account.type, 
+        subcategoryId: account.subcategoryId, 
+        debitMethod: account.debitMethod ?? null,
+        budgetMonthBasis: account.budgetMonthBasis ?? null,
+        creditDueDay: account.creditDueDay ?? null,
+        creditClosingDay: account.creditClosingDay ?? null,
+      });
     }
 
     const acc: Record<string, { subcategoryId: number; total: number; count: number; month: number; year: number; type: CategoryType }> = {};
@@ -374,23 +433,46 @@ export class TransactionService {
 
       // Non-transfer transactions: aggregate by their subcategory
       if (t.type !== 'TRANSFER') {
-        // If this is an expense coming from a CREDIT account with debitMethod=INVOICE, skip it
+        // If this is an expense coming from a PREPAID account, skip it
         if (t.type === 'EXPENSE' && t.accountId) {
           const src = accountMap.get(t.accountId);
-          if (src && (src.type === 'CREDIT' || src.type == 'PREPAID')) {
+          if (src && src.type == 'PREPAID') {
             continue;
           }
         }
 
         if (!t.subcategoryId) continue;
-        const key = `${t.subcategoryId}-${d.getMonth() + 1}-${d.getFullYear()}-${t.type}`;
+
+        // Determine which month to attribute this transaction to
+        let targetMonth = d.getMonth() + 1;
+        let targetYear = d.getFullYear();
+
+        // For CREDIT accounts with PER_PURCHASE debit and DUE_DATE basis, calculate due date month
+        if (t.type === 'EXPENSE' && t.accountId) {
+          const account = accountMap.get(t.accountId);
+          if (account && 
+              account.type === 'CREDIT' && 
+              account.debitMethod === 'PER_PURCHASE' && 
+              account.budgetMonthBasis === 'DUE_DATE' &&
+              account.creditClosingDay &&
+              account.creditClosingDay !== null &&
+              account.creditDueDay &&
+              account.creditDueDay !== null
+              ) {
+            const dueDateInfo = this.calculateDueDateMonth(d, account.creditClosingDay, account.creditDueDay);
+            targetMonth = dueDateInfo.month;
+            targetYear = dueDateInfo.year;
+          }
+        }
+
+        const key = `${t.subcategoryId}-${targetMonth}-${targetYear}-${t.type}`;
         if (!acc[key]) {
           acc[key] = {
             subcategoryId: t.subcategoryId,
             total: 0,
             count: 0,
-            month: d.getMonth() + 1,
-            year: d.getFullYear(),
+            month: targetMonth,
+            year: targetYear,
             type: t.type,
           };
         }
@@ -443,8 +525,10 @@ export class TransactionService {
       }
     }
 
-    return Object.values(acc).map(({ subcategoryId, total, count, month, year, type }) =>
-      new TransactionAggregated({ subcategoryId, total, count, month, year, type })
-    );
+    return Object.values(acc)
+      .filter(({ year: aggYear }) => aggYear === year)
+      .map(({ subcategoryId, total, count, month, year, type }) =>
+        new TransactionAggregated({ subcategoryId, total, count, month, year, type })
+      );
   }
 }
