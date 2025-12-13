@@ -23,7 +23,7 @@ echo "Removing potential existing backup file..."
 if [ -f "$BACKUPS_PATH/$BACKUP_FILENAME" ]; then rm -f "$BACKUPS_PATH/$BACKUP_FILENAME"; fi
 
 echo "Backuping remote render db..."
-pg_dump -d $DATABASE_URL > ${BACKUP_FILENAME}
+pg_dump -d $DATABASE_REMOTE_URL > ${BACKUP_FILENAME}
 
 echo "Dropping local db..."
 dropdb --username=postgres $DB_NAME
@@ -36,4 +36,4 @@ psql -d $DB_NAME -f $BACKUP_FILENAME --username=postgres
 
 # echo "RESTORE_REMOTE=true detected. Preparing to restore remote database from ${BACKUP_FILENAME}."
 
-# pg_restore --dbname=$DATABASE_URL --verbose --clean --if-exists --no-owner --no-privileges --format=directory backups/backup/money_manager
+# pg_restore --dbname=$DATABASE_REMOTE_URL --verbose --clean --if-exists --no-owner --no-privileges --format=directory backups/backup/money_manager
