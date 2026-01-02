@@ -20,17 +20,23 @@ export class CategoryController {
     @Get()
     @ApiOperation({ 
         summary: 'Listar todas as categorias do usuário autenticado',
-        description: 'Retorna todas as categorias criadas pelo usuário autenticado. As categorias são usadas para organizar subcategorias de despesas e rendas. Por exemplo, uma categoria "Moradia" pode conter subcategorias como "Aluguel", "Condomínio", "IPTU". Cada categoria pertence exclusivamente ao usuário que a criou, garantindo isolamento de dados entre usuários. As categorias incluem informação sobre o tipo (EXPENSE para despesas ou INCOME para rendas).'
+        description: 'Retorna todas as categorias criadas pelo usuário autenticado. As categorias são usadas para organizar subcategorias de despesas e rendas. Por exemplo, uma categoria "Moradia" pode conter subcategorias como "Aluguel", "Condomínio", "IPTU". Cada categoria pertence exclusivamente ao usuário que a criou, garantindo isolamento de dados entre usuários. As categorias incluem informação sobre o tipo (EXPENSE para despesas ou INCOME para rendas). Por padrão, categorias escondidas não são retornadas.'
     })
     @ApiQuery({ name: 'groupId', required: false, description: 'Filtrar por ID do grupo' })
+    @ApiQuery({ name: 'includeHidden', required: false, description: 'Incluir categorias escondidas' })
     @ApiResponse({ status: HttpStatus.OK, isArray: true, type: CategoryData, description: 'Lista de categorias retornada com sucesso' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
     public async find(
         @Query('groupId') groupId?: string,
+        @Query('includeHidden') includeHidden?: string,
         @Request() req?: AuthenticatedRequest
     ): Promise<CategoryData[]> {
         const userId = req?.user?.userId || 1;
-        return this.categoryService.findByUser(userId, groupId ? parseInt(groupId) : undefined);
+        return this.categoryService.findByUser(
+            userId, 
+            groupId ? parseInt(groupId) : undefined,
+            includeHidden === 'true'
+        );
     }
 
     @Get(':id')
@@ -79,19 +85,73 @@ export class CategoryController {
         return this.categoryService.update(parseInt(id), userId, input);
     }
 
+    @Get(':id/check-transactions')
+    @ApiParam({ name: 'id', description: 'ID único da categoria' })
+    @ApiOperation({ 
+        summary: 'Verificar se categoria possui transações associadas',
+        description: 'Verifica se existem transações associadas a qualquer subcategoria desta categoria. Retorna um objeto indicando se há transações e a quantidade total. Útil para exibir avisos antes de excluir uma categoria.'
+    })
+    @ApiResponse({ status: HttpStatus.OK, description: 'Verificação realizada com sucesso' })
+    @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Categoria não encontrada ou não pertence ao usuário' })
+    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
+    public async checkTransactions(@Param('id') id: string, @Request() req: AuthenticatedRequest): Promise<{ hasTransactions: boolean; count: number }> {
+        const userId = req?.user?.userId || 1;
+        return this.categoryService.checkTransactions(parseInt(id), userId);
+    }
+
     @Delete(':id')
     @ApiParam({ name: 'id', description: 'ID único da categoria a ser excluída' })
+    @ApiQuery({ name: 'deleteTransactions', required: false, description: 'Se true, deleta as transações associadas' })
+    @ApiQuery({ name: 'moveToSubcategoryId', required: false, description: 'ID da subcategoria para onde mover as transações' })
     @ApiOperation({ 
         summary: 'Excluir uma categoria',
-        description: 'Remove permanentemente uma categoria do sistema. ATENÇÃO: Esta operação é irreversível e pode afetar subcategorias, orçamentos e transações vinculadas a esta categoria, dependendo da implementação das regras de integridade referencial do banco de dados. Recomenda-se verificar se existem dependências antes de excluir. A categoria deve pertencer ao usuário autenticado para poder ser excluída.'
+        description: 'Remove permanentemente uma categoria do sistema. Se a categoria possuir transações associadas, você deve especificar deleteTransactions=true para deletar as transações ou fornecer moveToSubcategoryId para mover as transações para outra subcategoria. A categoria e suas subcategorias serão removidas.'
     })
     @ApiResponse({ status: HttpStatus.NO_CONTENT, description: 'Categoria excluída com sucesso' })
     @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Categoria não encontrada ou não pertence ao usuário' })
-    @ApiResponse({ status: HttpStatus.CONFLICT, description: 'Categoria não pode ser excluída devido a dependências existentes' })
+    @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Categoria possui transações e nenhuma ação foi especificada' })
     @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
-    public async delete(@Param('id') id: string, @Request() req: AuthenticatedRequest): Promise<void> {
+    public async delete(
+        @Param('id') id: string, 
+        @Query('deleteTransactions') deleteTransactions?: string,
+        @Query('moveToSubcategoryId') moveToSubcategoryId?: string,
+        @Request() req?: AuthenticatedRequest
+    ): Promise<void> {
         const userId = req?.user?.userId || 1;
-        await this.categoryService.delete(parseInt(id), userId);
+        await this.categoryService.delete(
+            parseInt(id), 
+            userId,
+            deleteTransactions === 'true',
+            moveToSubcategoryId ? parseInt(moveToSubcategoryId) : undefined
+        );
+    }
+
+    @Put(':id/hide')
+    @ApiParam({ name: 'id', description: 'ID único da categoria a ser escondida' })
+    @ApiOperation({ 
+        summary: 'Esconder uma categoria',
+        description: 'Marca uma categoria como escondida. Categorias escondidas não aparecem na listagem padrão e não são mostradas ao criar transações, mas as transações existentes permanecem associadas. Útil para categorias que não são mais utilizadas mas têm histórico.'
+    })
+    @ApiResponse({ status: HttpStatus.OK, type: CategoryData, description: 'Categoria escondida com sucesso' })
+    @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Categoria não encontrada ou não pertence ao usuário' })
+    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
+    public async hide(@Param('id') id: string, @Request() req: AuthenticatedRequest): Promise<CategoryData> {
+        const userId = req?.user?.userId || 1;
+        return this.categoryService.hide(parseInt(id), userId);
+    }
+
+    @Put(':id/unhide')
+    @ApiParam({ name: 'id', description: 'ID único da categoria a ser reexibida' })
+    @ApiOperation({ 
+        summary: 'Reexibir uma categoria',
+        description: 'Remove a marcação de escondida de uma categoria, fazendo com que ela volte a aparecer nas listagens e ao criar transações.'
+    })
+    @ApiResponse({ status: HttpStatus.OK, type: CategoryData, description: 'Categoria reexibida com sucesso' })
+    @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Categoria não encontrada ou não pertence ao usuário' })
+    @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Token JWT ausente ou inválido' })
+    public async unhide(@Param('id') id: string, @Request() req: AuthenticatedRequest): Promise<CategoryData> {
+        const userId = req?.user?.userId || 1;
+        return this.categoryService.unhide(parseInt(id), userId);
     }
 
 }

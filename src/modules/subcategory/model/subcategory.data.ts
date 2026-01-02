@@ -21,6 +21,9 @@ export class SubcategoryData {
     @ApiProperty({ description: 'Subcategory type', enum: ['EXPENSE', 'INCOME'], example: 'EXPENSE' })
     public readonly type: CategoryType;
 
+    @ApiProperty({ description: 'Whether the subcategory is hidden', example: false })
+    public readonly hidden: boolean;
+
     @ApiProperty({ description: 'Created at', example: '2024-01-01T00:00:00Z' })
     public readonly createdAt: Date;
 
@@ -31,6 +34,7 @@ export class SubcategoryData {
         this.name = entity.name;
         this.description = entity.description || undefined;
         this.type = entity.type;
+        this.hidden = entity.hidden;
         this.createdAt = entity.createdAt;
     }
 

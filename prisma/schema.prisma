@@ -39,6 +39,7 @@ model Category {
   name        String
   description String?
   type        CategoryType @default(EXPENSE)
+  hidden      Boolean      @default(false)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
@@ -49,6 +50,7 @@ model Category {
   @@index([userId])
   @@index([groupId])
   @@index([type])
+  @@index([hidden])
 }
 
 model Subcategory {
@@ -59,6 +61,7 @@ model Subcategory {
   name        String
   description String?
   type        CategoryType @default(EXPENSE)
+  hidden      Boolean      @default(false)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
@@ -74,6 +77,7 @@ model Subcategory {
   @@index([groupId])
   @@index([categoryId])
   @@index([type])
+  @@index([hidden])
 }
 
 model Budget {
