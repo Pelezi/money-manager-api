@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, HttpException, HttpStatus } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../common';
@@ -126,8 +126,8 @@ export class SubcategoryService {
      * @param userId User ID
      * @returns Object with counts for transactions, budgets, and accounts
      */
-    public async checkTransactions(id: number, userId: number): Promise<{ 
-        hasTransactions: boolean; 
+    public async checkTransactions(id: number, userId: number): Promise<{
+        hasTransactions: boolean;
         count: number;
         hasBudgets: boolean;
         budgetCount: number;
@@ -182,47 +182,126 @@ export class SubcategoryService {
      * @param moveToSubcategoryId If provided and deleteTransactions is false, move transactions to this subcategory
      */
     public async delete(
-        id: number, 
+        id: number,
         userId: number,
         deleteTransactions: boolean = false,
         moveToSubcategoryId?: number
     ): Promise<void> {
 
-        const subcategory = await this.prismaService.subcategory.findFirst({
-            where: { id, userId }
-        });
+        try {
 
-        if (!subcategory) {
-            throw new NotFoundException('Subcategory not found');
-        }
+            const subcategory = await this.prismaService.subcategory.findFirst({
+                where: { id, userId }
+            });
 
-        // Check if there are transactions
-        const transactionCount = await this.prismaService.transaction.count({
-            where: {
-                subcategoryId: id
+            if (!subcategory) {
+                throw new HttpException('Subcategoria não encontrada', HttpStatus.NOT_FOUND);
             }
-        });
 
-        if (transactionCount > 0) {
+            // Check if there are transactions
+            const transactionCount = await this.prismaService.transaction.count({
+                where: {
+                    subcategoryId: id
+                }
+            });
+
+            if (transactionCount > 0) {
+                if (deleteTransactions) {
+                    // Delete all transactions associated with this subcategory
+                    await this.prismaService.transaction.deleteMany({
+                        where: {
+                            subcategoryId: id
+                        }
+                    });
+                } else if (moveToSubcategoryId) {
+                    // Verify target subcategory exists and belongs to user
+                    const targetSubcategory = await this.prismaService.subcategory.findFirst({
+                        where: { id: moveToSubcategoryId, userId }
+                    });
+
+                    if (!targetSubcategory) {
+                        throw new HttpException('Subcategoria de destino não encontrada', HttpStatus.NOT_FOUND);
+                    }
+
+                    // Move all transactions to the target subcategory
+                    await this.prismaService.transaction.updateMany({
+                        where: {
+                            subcategoryId: id
+                        },
+                        data: {
+                            subcategoryId: moveToSubcategoryId
+                        }
+                    });
+
+                } else {
+                    throw new HttpException('Subcategoria possui transações. Por favor, especifique deleteTransactions=true ou forneça moveToSubcategoryId', HttpStatus.BAD_REQUEST);
+                }
+            }
+
+            // Handle budgets
             if (deleteTransactions) {
-                // Delete all transactions associated with this subcategory
-                await this.prismaService.transaction.deleteMany({
+                // Delete all budgets for this subcategory
+                await this.prismaService.budget.deleteMany({
                     where: {
                         subcategoryId: id
                     }
                 });
             } else if (moveToSubcategoryId) {
-                // Verify target subcategory exists and belongs to user
-                const targetSubcategory = await this.prismaService.subcategory.findFirst({
-                    where: { id: moveToSubcategoryId, userId }
+                // Transfer budgets to target subcategory, summing amounts for same month/year
+                const budgetsToMove = await this.prismaService.budget.findMany({
+                    where: {
+                        subcategoryId: id
+                    }
                 });
 
-                if (!targetSubcategory) {
-                    throw new BadRequestException('Target subcategory not found');
-                }
+                for (const budget of budgetsToMove) {
+                    // Check if target already has a budget for this month/year
+                    const existingBudget = await this.prismaService.budget.findFirst({
+                        where: {
+                            subcategoryId: moveToSubcategoryId,
+                            month: budget.month,
+                            year: budget.year
+                        }
+                    });
 
-                // Move all transactions to the target subcategory
-                await this.prismaService.transaction.updateMany({
+                    if (existingBudget) {
+                        // Sum the amounts
+                        await this.prismaService.budget.update({
+                            where: { id: existingBudget.id },
+                            data: {
+                                amount: existingBudget.amount.toNumber() + budget.amount.toNumber()
+                            }
+                        });
+                        // Delete the old budget
+                        await this.prismaService.budget.delete({
+                            where: { id: budget.id }
+                        });
+                    } else {
+                        // Move the budget to target subcategory
+                        await this.prismaService.budget.update({
+                            where: { id: budget.id },
+                            data: {
+                                subcategoryId: moveToSubcategoryId
+                            }
+                        });
+                    }
+                }
+            }
+
+            // Handle accounts
+            if (deleteTransactions) {
+                // Set subcategoryId to null for accounts using this subcategory
+                await this.prismaService.account.updateMany({
+                    where: {
+                        subcategoryId: id
+                    },
+                    data: {
+                        subcategoryId: null
+                    }
+                });
+            } else if (moveToSubcategoryId) {
+                // Update accounts to use the target subcategory
+                await this.prismaService.account.updateMany({
                     where: {
                         subcategoryId: id
                     },
@@ -230,88 +309,16 @@ export class SubcategoryService {
                         subcategoryId: moveToSubcategoryId
                     }
                 });
-            } else {
-                throw new BadRequestException('Subcategory has transactions. Please specify deleteTransactions=true or provide moveToSubcategoryId');
             }
+
+            // Delete the subcategory
+            await this.prismaService.subcategory.delete({
+                where: { id }
+            });
+
+        } catch (error) {
+            throw new HttpException(`Erro ao deletar subcategoria: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
-        // Handle budgets
-        if (deleteTransactions) {
-            // Delete all budgets for this subcategory
-            await this.prismaService.budget.deleteMany({
-                where: {
-                    subcategoryId: id
-                }
-            });
-        } else if (moveToSubcategoryId) {
-            // Transfer budgets to target subcategory, summing amounts for same month/year
-            const budgetsToMove = await this.prismaService.budget.findMany({
-                where: {
-                    subcategoryId: id
-                }
-            });
-
-            for (const budget of budgetsToMove) {
-                // Check if target already has a budget for this month/year
-                const existingBudget = await this.prismaService.budget.findFirst({
-                    where: {
-                        subcategoryId: moveToSubcategoryId,
-                        month: budget.month,
-                        year: budget.year
-                    }
-                });
-
-                if (existingBudget) {
-                    // Sum the amounts
-                    await this.prismaService.budget.update({
-                        where: { id: existingBudget.id },
-                        data: {
-                            amount: existingBudget.amount.toNumber() + budget.amount.toNumber()
-                        }
-                    });
-                    // Delete the old budget
-                    await this.prismaService.budget.delete({
-                        where: { id: budget.id }
-                    });
-                } else {
-                    // Move the budget to target subcategory
-                    await this.prismaService.budget.update({
-                        where: { id: budget.id },
-                        data: {
-                            subcategoryId: moveToSubcategoryId
-                        }
-                    });
-                }
-            }
-        }
-
-        // Handle accounts
-        if (deleteTransactions) {
-            // Set subcategoryId to null for accounts using this subcategory
-            await this.prismaService.account.updateMany({
-                where: {
-                    subcategoryId: id
-                },
-                data: {
-                    subcategoryId: null
-                }
-            });
-        } else if (moveToSubcategoryId) {
-            // Update accounts to use the target subcategory
-            await this.prismaService.account.updateMany({
-                where: {
-                    subcategoryId: id
-                },
-                data: {
-                    subcategoryId: moveToSubcategoryId
-                }
-            });
-        }
-
-        // Delete the subcategory
-        await this.prismaService.subcategory.delete({
-            where: { id }
-        });
     }
 
     /**
