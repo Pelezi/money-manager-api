@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, HttpException, HttpStatus } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../../../generated/prisma/client';
 
 import { PrismaService } from '../../common';
 import { SubcategoryData, SubcategoryInput } from '../model';

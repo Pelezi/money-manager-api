@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { CategoryType } from '@prisma/client';
+import { CategoryType } from '../../../generated/prisma/client';
 
 export class TransactionAggregated {
 

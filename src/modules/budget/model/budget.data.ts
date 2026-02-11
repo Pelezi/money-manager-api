@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Budget, CategoryType } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Budget, CategoryType } from '../../../generated/prisma/client';
 
 export class BudgetData {
 
@@ -34,7 +33,7 @@ export class BudgetData {
     public constructor(entity: Budget) {
         this.id = entity.id;
         this.userId = entity.userId;
-        this.amount = (entity.amount as Decimal).toNumber();
+        this.amount = entity.amount.toNumber();
         this.type = entity.type;
         this.month = entity.month;
         this.year = entity.year;

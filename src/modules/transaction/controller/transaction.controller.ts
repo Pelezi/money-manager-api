@@ -1,7 +1,7 @@
 import { AuthenticatedRequest } from "../../common";
 import { Body, Controller, Delete, Get, HttpStatus, Param, Post, Put, Query, UseGuards, Request, BadRequestException } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiParam, ApiQuery } from '@nestjs/swagger';
-import { CategoryType } from '@prisma/client';
+import { CategoryType } from '../../../generated/prisma/client';
 
 import { RestrictedGuard } from '../../common';
 

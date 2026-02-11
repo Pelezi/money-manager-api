@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { AccountBalance } from '@prisma/client';
+import { AccountBalance } from '../../../generated/prisma/client';
 
 export class AccountBalanceData {
 

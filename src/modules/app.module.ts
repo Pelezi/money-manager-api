@@ -7,7 +7,6 @@ import { SubcategoryModule } from './subcategory/subcategory.module';
 import { BudgetModule } from './budget/budget.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { ExpenseModule } from './expense/expense.module';
-import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { GroupModule } from './group/group.module';
 import { NotificationModule } from './notification/notification.module';
 import { AccountModule } from './account/account.module';
@@ -21,7 +20,6 @@ import { AccountModule } from './account/account.module';
         BudgetModule,
         TransactionModule,
         ExpenseModule,
-        WhatsappModule,
         GroupModule,
         NotificationModule,
         AccountModule

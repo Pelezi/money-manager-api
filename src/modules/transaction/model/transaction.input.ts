@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { CategoryType } from '@prisma/client';
+import { CategoryType } from '../../../generated/prisma/client';
 
 export class TransactionInput {
     @ApiProperty({ description: 'Account ID', example: 1, required: true })

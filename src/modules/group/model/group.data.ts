@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Group } from '@prisma/client';
+import { Group } from '../../../generated/prisma/client';
 
 export class GroupData {
 

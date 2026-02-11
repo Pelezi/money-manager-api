@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { GroupRole } from '@prisma/client';
+import { GroupRole } from '../../../generated/prisma/client';
 
 export class GroupRoleData {
 

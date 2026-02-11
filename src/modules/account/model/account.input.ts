@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { AccountType, BudgetMonthBasis, DebitMethod } from '@prisma/client';
+import { AccountType, BudgetMonthBasis, DebitMethod } from '../../../generated/prisma/client';
 
 export class AccountInput {
     @ApiProperty({ description: 'Account name', example: 'Dinheiro' })

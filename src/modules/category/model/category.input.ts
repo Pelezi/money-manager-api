@@ -1,5 +1,5 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
-import { CategoryType } from '@prisma/client';
+import { CategoryType } from '../../../generated/prisma/client';
 import { CategoryData } from './category.data';
 
 export class CategoryInput extends PickType(CategoryData, ['name'] as const) {

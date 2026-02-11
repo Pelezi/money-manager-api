@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { CategoryType } from '@prisma/client';
+import { CategoryType } from '../../../generated/prisma/client';
 
 export class BudgetInput {
     @ApiProperty({ description: 'Budget name', example: 'Groceries Budget' })

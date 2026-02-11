@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CategoryType, Prisma } from '@prisma/client';
+import { CategoryType, Prisma } from '../../../generated/prisma/client';
 
 import { PrismaService } from '../../common';
 import { BudgetData, BudgetInput } from '../model';

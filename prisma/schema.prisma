@@ -1,10 +1,10 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -17,6 +17,8 @@ model User {
   firstAccess Boolean  @default(true)
   timezone    String   @default("UTC")
   defaultHomepage String?
+  isOwner       Boolean  @default(false)
+  refreshToken String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -30,6 +32,21 @@ model User {
   sentInvitations   GroupInvitation[]  @relation("SentInvitations")
   notifications     Notification[]
   accounts            Account[]
+  apiKeys             ApiKey[]
+}
+
+model ApiKey {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  key         String   @unique
+  name        String
+  lastUsedAt  DateTime?
+  createdAt   DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([key])
+  @@index([userId])
 }
 
 model Category {

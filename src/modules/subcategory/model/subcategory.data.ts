@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Subcategory, CategoryType } from '@prisma/client';
+import { Subcategory, CategoryType } from '../../../generated/prisma/client';
 
 export class SubcategoryData {
 
