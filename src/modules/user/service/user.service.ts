@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
@@ -76,53 +76,58 @@ export class UserService {
      * @returns JWT token and user data
      */
     public async login(data: userData.LoginInput): Promise<userData.LoginResponse> {
-        const user = await this.prismaService.user.findUnique({
-            where: { email: data.email }
-        });
+        try {
+            const user = await this.prismaService.user.findUnique({
+                where: { email: data.email }
+            });
 
-        if (!user) {
-            throw new Error('Invalid credentials');
+            if (!user) {
+                throw new Error('Invalid credentials');
+            }
+
+            const isPasswordValid = await bcrypt.compare(data.password, user.password);
+
+            if (!isPasswordValid) {
+                throw new Error('Invalid credentials');
+            }
+
+            const token = jwt.sign(
+                {
+                    userId: user.id,
+                    email: user.email,
+                    role: Role.RESTRICTED,
+                    isOwner: user.isOwner
+                },
+                process.env.JWT_SECRET || 'secret',
+                { expiresIn: '24h', issuer: process.env.JWT_ISSUER || 'IssuerApplication' }
+            );
+
+            // Generate refresh token
+            const refreshToken = jwt.sign(
+                {
+                    userId: user.id,
+                    email: user.email,
+                    type: 'refresh'
+                },
+                process.env.JWT_SECRET || 'secret',
+                { expiresIn: '7d', issuer: process.env.JWT_ISSUER || 'IssuerApplication' }
+            );
+
+            // Store refresh token in database
+            await this.prismaService.user.update({
+                where: { id: user.id },
+                data: { refreshToken }
+            });
+
+            return {
+                token,
+                refreshToken,
+                user: user
+            };
+        } catch (error) {
+            console.log('Login error:', error);
+            throw new HttpException(error.message, error.status || HttpStatus.UNAUTHORIZED);
         }
-
-        const isPasswordValid = await bcrypt.compare(data.password, user.password);
-
-        if (!isPasswordValid) {
-            throw new Error('Invalid credentials');
-        }
-
-        const token = jwt.sign(
-            {
-                userId: user.id,
-                email: user.email,
-                role: Role.RESTRICTED,
-                isOwner: user.isOwner
-            },
-            process.env.JWT_SECRET || 'secret',
-            { expiresIn: '24h', issuer: process.env.JWT_ISSUER || 'IssuerApplication' }
-        );
-
-        // Generate refresh token
-        const refreshToken = jwt.sign(
-            {
-                userId: user.id,
-                email: user.email,
-                type: 'refresh'
-            },
-            process.env.JWT_SECRET || 'secret',
-            { expiresIn: '7d', issuer: process.env.JWT_ISSUER || 'IssuerApplication' }
-        );
-
-        // Store refresh token in database
-        await this.prismaService.user.update({
-            where: { id: user.id },
-            data: { refreshToken }
-        });
-
-        return {
-            token,
-            refreshToken,
-            user: user
-        };
     }
 
     /**

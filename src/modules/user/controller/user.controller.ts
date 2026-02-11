@@ -38,7 +38,8 @@ export class UserController {
         try {
             return await this.userService.login(input);
         } catch (error) {
-            throw new HttpException(error.message, HttpStatus.UNAUTHORIZED);
+            console.log('Login error:', error);
+            throw new HttpException(error.message, error.status || HttpStatus.UNAUTHORIZED);
         }
     }
 
